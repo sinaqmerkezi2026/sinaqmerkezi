@@ -7,9 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, GraduationCap, Ticket, Loader2, Sparkles } from 'lucide-react';
-import { useFirestore } from '@/firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, MessageCircle } from 'lucide-react';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where } from 'firebase/firestore';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { Badge } from '@/components/ui/badge';
 
 export default function StudentEntry() {
   const [code, setCode] = useState('');
@@ -20,6 +28,13 @@ export default function StudentEntry() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
+
+  // Fetch active exams for the sliding section
+  const activeExamsQuery = useMemoFirebase(() => {
+    return query(collection(firestore, 'exams'));
+  }, [firestore]);
+
+  const { data: activeExams, isLoading: isExamsLoading } = useCollection(activeExamsQuery);
 
   const handleEnter = async () => {
     const cleanCode = code.trim().toUpperCase();
@@ -83,13 +98,19 @@ export default function StudentEntry() {
     }
   };
 
+  const handleBuyBySms = (exam: any) => {
+    const phoneNumber = "+994500000000"; // Placeholder admin phone
+    const message = `Salam, mən "${exam.name}" imtahanını almaq istəyirəm. Qiymət: ${exam.price} AZN.`;
+    window.location.href = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col items-center p-6 relative overflow-hidden space-y-12">
       {/* Decorative Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
 
-      <div className="w-full max-w-md space-y-8 relative z-10">
+      <div className="w-full max-w-6xl mt-12 space-y-16 relative z-10">
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center p-4 bg-card shadow-2xl rounded-3xl mb-2 animate-bounce border border-border/50">
             <GraduationCap className="w-12 h-12 text-primary" />
@@ -103,72 +124,145 @@ export default function StudentEntry() {
           </div>
         </div>
 
-        <Card className="border border-border/50 shadow-2xl bg-card/50 backdrop-blur-xl rounded-[2rem] overflow-hidden">
-          <CardHeader className="pt-8 px-8">
-            <CardTitle className="text-2xl font-bold flex items-center gap-3 text-foreground">
-              <LogIn className="w-6 h-6 text-primary" />
-              Sessiyaya Giriş
-            </CardTitle>
-            <CardDescription className="text-muted-foreground font-medium">
-              İmtahan kodunuzu və şəxsi məlumatlarınızı daxil edin.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 p-8">
-            <div className="space-y-2">
-              <Label htmlFor="code" className="text-sm font-bold text-muted-foreground">İmtahan Kodu</Label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Ticket className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                </div>
-                <Input 
-                  id="code" 
-                  placeholder="MƏS: A7B2C9" 
-                  className="pl-12 uppercase font-mono tracking-[0.3em] text-xl h-14 rounded-2xl border-2 border-border/50 focus:border-primary focus:ring-primary/20 transition-all bg-muted/20 text-foreground"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-bold text-muted-foreground">Ad</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Adınız" 
-                  className="h-12 rounded-xl border-2 border-border/50 focus:border-primary bg-muted/20 text-foreground"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="surname" className="text-sm font-bold text-muted-foreground">Soyad</Label>
-                <Input 
-                  id="surname" 
-                  placeholder="Soyadınız" 
-                  className="h-12 rounded-xl border-2 border-border/50 focus:border-primary bg-muted/20 text-foreground"
-                  value={surname}
-                  onChange={(e) => setSurname(e.target.value)}
-                />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* Active Exams Sliding Section */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-2xl font-black text-foreground flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Aktiv İmtahanlar
+              </h2>
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-black">
+                Yeni
+              </Badge>
             </div>
 
-            <Button 
-              className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]" 
-              onClick={handleEnter}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                  Giriş edilir...
-                </>
-              ) : 'İmtahana Başla'}
-            </Button>
-          </CardContent>
-        </Card>
+            {isExamsLoading ? (
+              <div className="h-64 flex items-center justify-center bg-card/30 rounded-[2rem] border border-dashed border-border/50">
+                <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
+              </div>
+            ) : activeExams && activeExams.length > 0 ? (
+              <Carousel className="w-full">
+                <CarouselContent>
+                  {activeExams.map((exam: any) => (
+                    <CarouselItem key={exam.id} className="md:basis-full lg:basis-full">
+                      <Card className="border-none shadow-xl bg-card/50 backdrop-blur-xl rounded-[2.5rem] overflow-hidden group hover:ring-2 ring-primary/20 transition-all">
+                        <CardContent className="p-8 space-y-6">
+                          <div className="space-y-2">
+                            <h3 className="text-3xl font-black text-foreground group-hover:text-primary transition-colors">{exam.name}</h3>
+                            <p className="text-muted-foreground font-medium">Bu imtahana qoşularaq biliyinizi yoxlayın.</p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-muted/30 p-4 rounded-2xl flex items-center gap-3">
+                              <div className="bg-primary/10 p-2 rounded-xl">
+                                <Clock className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Müddət</p>
+                                <p className="text-sm font-bold">{exam.durationMinutes} dəq</p>
+                              </div>
+                            </div>
+                            <div className="bg-primary/10 p-4 rounded-2xl flex items-center gap-3">
+                              <div className="bg-primary/20 p-2 rounded-xl">
+                                <DollarSign className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-black uppercase text-primary/60 tracking-widest">Qiymət</p>
+                                <p className="text-sm font-bold text-primary">{exam.price} AZN</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <Button 
+                            className="w-full h-14 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-3"
+                            onClick={() => handleBuyBySms(exam)}
+                          >
+                            <MessageCircle className="w-6 h-6" />
+                            İndi Al (SMS)
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <div className="hidden sm:block">
+                  <CarouselPrevious className="-left-4 bg-card/80 border-border/50 hover:bg-primary hover:text-white transition-colors" />
+                  <CarouselNext className="-right-4 bg-card/80 border-border/50 hover:bg-primary hover:text-white transition-colors" />
+                </div>
+              </Carousel>
+            ) : (
+              <div className="h-64 flex flex-col items-center justify-center bg-card/30 rounded-[2rem] border border-dashed border-border/50 text-muted-foreground">
+                <p className="font-bold">Hazırda aktiv imtahan yoxdur.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Student Entry Form */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-black text-foreground px-2 flex items-center gap-2">
+              <Ticket className="w-5 h-5 text-primary" />
+              Sessiyaya Giriş
+            </h2>
+            <Card className="border border-border/50 shadow-2xl bg-card/50 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
+              <CardContent className="space-y-6 p-10">
+                <div className="space-y-2">
+                  <Label htmlFor="code" className="text-sm font-bold text-muted-foreground">İmtahan Kodu</Label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Ticket className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    </div>
+                    <Input 
+                      id="code" 
+                      placeholder="MƏS: A7B2C9" 
+                      className="pl-12 uppercase font-mono tracking-[0.3em] text-xl h-14 rounded-2xl border-2 border-border/50 focus:border-primary focus:ring-primary/20 transition-all bg-muted/20 text-foreground"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-bold text-muted-foreground">Ad</Label>
+                    <Input 
+                      id="name" 
+                      placeholder="Adınız" 
+                      className="h-12 rounded-xl border-2 border-border/50 focus:border-primary bg-muted/20 text-foreground"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="surname" className="text-sm font-bold text-muted-foreground">Soyad</Label>
+                    <Input 
+                      id="surname" 
+                      placeholder="Soyadınız" 
+                      className="h-12 rounded-xl border-2 border-border/50 focus:border-primary bg-muted/20 text-foreground"
+                      value={surname}
+                      onChange={(e) => setSurname(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <Button 
+                  className="w-full h-14 text-lg font-black rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] bg-primary" 
+                  onClick={handleEnter}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                      Giriş edilir...
+                    </>
+                  ) : 'İmtahana Başla'}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
         
-        <p className="text-center text-muted-foreground/50 text-sm font-medium">
+        <p className="text-center text-muted-foreground/50 text-sm font-medium pb-8">
           &copy; {new Date().getFullYear()} ImtahanFlow. Bütün hüquqlar qorunur.
         </p>
       </div>
