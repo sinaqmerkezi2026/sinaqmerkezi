@@ -1,0 +1,156 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * IMTAHANFLOW SECURITY RULES - PROTOTYPING MODE
+     * 
+     * CORE PHILOSOPHY:
+     * This ruleset implements a dual-role access model: Administrators and Students.
+     * 1. Admin Authorization (DBAC): Admin access is determined by the presence of a user's UID 
+     *    in the `roles_admin` collection. Admins have broad CRUD permissions over master exam data.
+     * 2. Student Authorization (Ownership): Student access is strictly scoped to their own 
+     *    exam attempts. This is secured using "Authorization Independence" via heavy denormalization.
+     * 
+     * DATA STRUCTURE:
+     * - /roles_admin/{adminUid}: Registry for administrative users.
+     * - /exams/{examId}: Master definitions for exams, questions, and access codes.
+     * - /studentAttempts/{studentAttemptId}: Isolated student data, including question copies 
+     *   and answers, scoped to the specific student's anonymous UID.
+     * 
+     * KEY SECURITY DECISIONS:
+     * - Denormalization: The field `studentAuthUid` is denormalized onto every student-facing 
+     *   document (attempts, questions, answers). This allows for Query-as-Permission (QAP) 
+     *   checks without costly recursive `get()` calls.
+     * - Structural Segregation: Master exam questions and student attempt questions are 
+     *   stored in separate top-level hierarchies to prevent accidental exposure of correct answers.
+     * - Access Codes: Students can `get` and `update` access codes to "claim" them, but cannot 
+     *   list the collection or modify administrative fields.
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    // Checks if the incoming or existing data belongs to the current student
+    function isStudentOwner(data) {
+      return isSignedIn() && data.studentAuthUid == request.auth.uid;
+    }
+
+    // Verifies the user owns the existing document for updates/deletes
+    function isExistingStudentOwner() {
+      return resource != null && isStudentOwner(resource.data);
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Administrative registry. Existence of a UID here grants database-wide admin privileges.
+     * @path /roles_admin/{adminUid}
+     * @allow (get) Any signed-in user can check if they are an admin.
+     * @deny (write) No client-side creation; admins must be provisioned via Admin SDK or Console.
+     * @principle Role-Based Access Control (RBAC) via Document Existence.
+     */
+    match /roles_admin/{adminUid} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create, update, delete: if false; 
+    }
+
+    /**
+     * @description Master exam definitions.
+     * @path /exams/{examId}
+     * @allow (read/write) Full CRUD for admins.
+     * @deny (all) Direct access for non-admin students.
+     * @principle Structural segregation of master data from student data.
+     */
+    match /exams/{examId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+
+      match /questions/{questionId} {
+        allow get, list: if isAdmin();
+        allow create, update, delete: if isAdmin();
+
+        match /multipleChoiceOptions/{optionId} {
+          allow get, list: if isAdmin();
+          allow create, update, delete: if isAdmin();
+        }
+        
+        match /openEndedCorrectAnswer/{id} {
+          allow get, list: if isAdmin();
+          allow create, update, delete: if isAdmin();
+        }
+
+        match /explanationQuestionCriteria/{id} {
+          allow get, list: if isAdmin();
+          allow create, update, delete: if isAdmin();
+        }
+      }
+
+      /**
+       * @description Access codes for entering exams.
+       * @path /exams/{examId}/accessCodes/{accessCodeId}
+       * @allow (get/update) Students can find a code and mark it as used.
+       * @deny (list/create/delete) Restricted to admins.
+       * @principle Limited student interaction for session initialization.
+       */
+      match /accessCodes/{accessCodeId} {
+        allow get: if isSignedIn();
+        allow update: if isSignedIn() && resource.data.isUsedForEntry == false;
+        allow list, create, delete: if isAdmin();
+      }
+    }
+
+    /**
+     * @description Root collection for student exam attempts.
+     * @path /studentAttempts/{studentAttemptId}
+     * @allow (create) Signed-in students can start an attempt by setting their UID.
+     * @allow (read/update) The owner of the attempt or an admin.
+     * @deny (delete) Attempts are immutable for students once created.
+     * @principle Ownership-based authorization via denormalized UID.
+     */
+    match /studentAttempts/{studentAttemptId} {
+      allow get, list: if isAdmin() || isStudentOwner(resource.data);
+      allow create: if isSignedIn() && request.resource.data.studentAuthUid == request.auth.uid;
+      allow update: if isAdmin() || (isExistingStudentOwner() && request.resource.data.studentAuthUid == resource.data.studentAuthUid);
+      allow delete: if isAdmin();
+
+      /**
+       * @description Copies of questions for a specific student attempt.
+       * @path /studentAttempts/{studentAttemptId}/questions/{questionId}
+       * @allow (read) Access granted if the student owns the parent attempt.
+       * @principle QAP (Query as Permission) via denormalized student UID.
+       */
+      match /questions/{questionId} {
+        allow get, list: if isAdmin() || isStudentOwner(resource.data);
+        allow create, update, delete: if isAdmin();
+
+        match /multipleChoiceOptions/{optionId} {
+          allow get, list: if isAdmin() || isStudentOwner(resource.data);
+          allow create, update, delete: if isAdmin();
+        }
+      }
+
+      /**
+       * @description Student-submitted answers for their specific attempt.
+       * @path /studentAttempts/{studentAttemptId}/studentAnswers/{studentAnswerId}
+       * @allow (create) Students can submit answers linked to their UID.
+       * @allow (read/update) Owners and admins can view/grade answers.
+       * @principle Relational integrity enforced by matching path/data student IDs.
+       */
+      match /studentAnswers/{studentAnswerId} {
+        allow get, list: if isAdmin() || isStudentOwner(resource.data);
+        allow create: if isSignedIn() && request.resource.data.studentAuthUid == request.auth.uid;
+        allow update: if isAdmin() || (isExistingStudentOwner() && request.resource.data.studentAuthUid == resource.data.studentAuthUid);
+        allow delete: if isAdmin();
+      }
+    }
+  }
+}

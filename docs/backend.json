@@ -1,0 +1,553 @@
+{
+  "entities": {
+    "Exam": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Exam",
+      "type": "object",
+      "description": "Represents an online examination configured by an admin, including its duration, availability, and pricing.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Exam entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name or title of the exam."
+        },
+        "activeStartDate": {
+          "type": "string",
+          "description": "The date and time when the exam becomes available for students.",
+          "format": "date-time"
+        },
+        "activeEndDate": {
+          "type": "string",
+          "description": "The date and time when the exam is no longer available.",
+          "format": "date-time"
+        },
+        "durationMinutes": {
+          "type": "number",
+          "description": "The maximum duration for the exam once a student starts it, in minutes."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the exam in the local currency (e.g., Manat). A value of 0 indicates a free exam."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "activeStartDate",
+        "activeEndDate",
+        "durationMinutes",
+        "price"
+      ]
+    },
+    "Question": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Question",
+      "type": "object",
+      "description": "Represents a single question within an exam, defining its type, text, and order.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Question entity."
+        },
+        "examId": {
+          "type": "string",
+          "description": "Reference to the Exam this question belongs to. (Relationship: Exam 1:N Question)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of the question.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "text": {
+          "type": "string",
+          "description": "The main text of the question."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Optional URL to an image associated with the question.",
+          "format": "uri"
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order of the question within the exam."
+        }
+      },
+      "required": [
+        "id",
+        "examId",
+        "type",
+        "text",
+        "order"
+      ]
+    },
+    "MultipleChoiceOption": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MultipleChoiceOption",
+      "type": "object",
+      "description": "Represents a single answer option for a multiple-choice question, indicating if it's the correct answer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the MultipleChoiceOption entity."
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to the Question this option belongs to. (Relationship: Question 1:N MultipleChoiceOption)"
+        },
+        "text": {
+          "type": "string",
+          "description": "The text content of the answer option."
+        },
+        "isCorrect": {
+          "type": "boolean",
+          "description": "Indicates if this option is the correct answer for the multiple-choice question."
+        }
+      },
+      "required": [
+        "id",
+        "questionId",
+        "text",
+        "isCorrect"
+      ]
+    },
+    "OpenEndedQuestionCorrectAnswer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OpenEndedQuestionCorrectAnswer",
+      "type": "object",
+      "description": "Stores the predefined correct answer for an open-ended question.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the OpenEndedQuestionCorrectAnswer entity."
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to the Open-Ended Question this correct answer is for. (Relationship: Question 1:1 OpenEndedQuestionCorrectAnswer)"
+        },
+        "correctAnswerText": {
+          "type": "string",
+          "description": "The exact text of the correct answer for the open-ended question."
+        }
+      },
+      "required": [
+        "id",
+        "questionId",
+        "correctAnswerText"
+      ]
+    },
+    "ExplanationQuestionCriteria": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ExplanationQuestionCriteria",
+      "type": "object",
+      "description": "Stores the correct final answer and detailed explanation criteria for an explanation-based question evaluated by AI.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ExplanationQuestionCriteria entity."
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to the Explanation Question this criteria is for. (Relationship: Question 1:1 ExplanationQuestionCriteria)"
+        },
+        "correctFinalAnswer": {
+          "type": "string",
+          "description": "The exact correct final numerical or textual answer expected from the student."
+        },
+        "explanationCriteria": {
+          "type": "string",
+          "description": "Detailed criteria or a model explanation used by the AI to evaluate the student's explanation."
+        }
+      },
+      "required": [
+        "id",
+        "questionId",
+        "correctFinalAnswer",
+        "explanationCriteria"
+      ]
+    },
+    "ExamAccessCode": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ExamAccessCode",
+      "type": "object",
+      "description": "A unique, 6-character alphanumeric code generated for an exam, allowing a student one-time entry and subsequent results viewing.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ExamAccessCode entity."
+        },
+        "code": {
+          "type": "string",
+          "description": "The unique 6-character alphanumeric code for exam access."
+        },
+        "examId": {
+          "type": "string",
+          "description": "Reference to the Exam this code grants access to. (Relationship: Exam 1:N ExamAccessCode)"
+        },
+        "isUsedForEntry": {
+          "type": "boolean",
+          "description": "Indicates if this code has already been used to start an exam."
+        },
+        "studentAttemptId": {
+          "type": "string",
+          "description": "Reference to the StudentAttempt created when this code was first used for entry. Null if not yet used. (Relationship: ExamAccessCode 1:1 StudentAttempt)"
+        }
+      },
+      "required": [
+        "id",
+        "code",
+        "examId",
+        "isUsedForEntry"
+      ]
+    },
+    "StudentAttempt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StudentAttempt",
+      "type": "object",
+      "description": "Represents a single student's attempt at taking an exam, linked to an access code and recording student details and overall progress.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StudentAttempt entity."
+        },
+        "examId": {
+          "type": "string",
+          "description": "Reference to the Exam being attempted. (Relationship: Exam 1:N StudentAttempt)"
+        },
+        "examAccessCodeId": {
+          "type": "string",
+          "description": "Reference to the ExamAccessCode used for this attempt. (Relationship: ExamAccessCode 1:1 StudentAttempt)"
+        },
+        "studentFirstName": {
+          "type": "string",
+          "description": "The first name of the student taking the exam."
+        },
+        "studentLastName": {
+          "type": "string",
+          "description": "The last name of the student taking the exam."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The date and time when the student started the exam.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The date and time when the student completed or submitted the exam. Null if not yet completed.",
+          "format": "date-time"
+        },
+        "totalScore": {
+          "type": "number",
+          "description": "The overall score obtained by the student for this attempt. Null until the exam is fully graded."
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Indicates if the exam attempt has been completed and submitted."
+        }
+      },
+      "required": [
+        "id",
+        "examId",
+        "examAccessCodeId",
+        "studentFirstName",
+        "studentLastName",
+        "startTime",
+        "isCompleted"
+      ]
+    },
+    "StudentAnswer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StudentAnswer",
+      "type": "object",
+      "description": "Records a student's submitted answer and the corresponding evaluation results for a specific question within an exam attempt.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StudentAnswer entity."
+        },
+        "studentAttemptId": {
+          "type": "string",
+          "description": "Reference to the StudentAttempt this answer belongs to. (Relationship: StudentAttempt 1:N StudentAnswer)"
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to the Question being answered. (Relationship: Question 1:N StudentAnswer)"
+        },
+        "submittedMultipleChoiceOptionId": {
+          "type": "string",
+          "description": "The ID of the chosen option for multiple-choice questions."
+        },
+        "submittedOpenEndedAnswerText": {
+          "type": "string",
+          "description": "The student's submitted answer for open-ended questions."
+        },
+        "submittedExplanationText": {
+          "type": "string",
+          "description": "The student's submitted explanation for explanation questions."
+        },
+        "submittedFinalAnswerText": {
+          "type": "string",
+          "description": "The student's submitted final answer for explanation questions."
+        },
+        "score": {
+          "type": "number",
+          "description": "The score awarded for this specific answer (e.g., 0, 1/3, 1/2, 2/3, 1)."
+        },
+        "isCorrectFinalAnswer": {
+          "type": "boolean",
+          "description": "Indicates if the student's final answer (for explanation questions), selected option (for MCQs), or submitted text (for open-ended) matches the correct one."
+        },
+        "aiExplanationFeedback": {
+          "type": "string",
+          "description": "AI-generated feedback on the student's explanation for explanation questions."
+        },
+        "feedbackReason": {
+          "type": "string",
+          "description": "Details on why a specific score was awarded or deducted for explanation questions, based on AI analysis."
+        },
+        "answeredAt": {
+          "type": "string",
+          "description": "The date and time when the student submitted this specific answer.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "studentAttemptId",
+        "questionId",
+        "answeredAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "roles_admin/{adminUid}",
+        "definition": {
+          "entityName": "admin",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection storing the Firebase Auth UIDs of users designated as administrators. Documents exist only for admins. Used for database authorization (DBAC - existence over content).",
+          "params": [
+            {
+              "name": "adminUid",
+              "description": "The Firebase Authentication UID of the admin user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "exams/{examId}",
+        "definition": {
+          "entityName": "Exam",
+          "schema": {
+            "$ref": "#/backend/entities/Exam"
+          },
+          "description": "Top-level collection for all master exam definitions. Admins have full CRUD access. Includes fields like `activeStartDate` and `activeEndDate` for exam availability.",
+          "params": [
+            {
+              "name": "examId",
+              "description": "The unique identifier for the exam."
+            }
+          ]
+        }
+      },
+      {
+        "path": "exams/{examId}/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Subcollection containing master question definitions for a specific exam. Admins have full CRUD access. Includes `examId` for explicit linkage. These documents are copied to student attempts.",
+          "params": [
+            {
+              "name": "examId",
+              "description": "The unique identifier of the parent exam."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier for the question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "exams/{examId}/questions/{questionId}/multipleChoiceOptions/{optionId}",
+        "definition": {
+          "entityName": "MultipleChoiceOption",
+          "schema": {
+            "$ref": "#/backend/entities/MultipleChoiceOption"
+          },
+          "description": "Subcollection containing master multiple-choice options for a specific question. Admins have full CRUD access. Includes `examId` and `questionId` for explicit linkage. `isCorrect` indicates the correct answer. These documents are copied to student attempts.",
+          "params": [
+            {
+              "name": "examId",
+              "description": "The unique identifier of the parent exam."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the parent question."
+            },
+            {
+              "name": "optionId",
+              "description": "The unique identifier for the multiple-choice option."
+            }
+          ]
+        }
+      },
+      {
+        "path": "exams/{examId}/questions/{questionId}/openEndedCorrectAnswer",
+        "definition": {
+          "entityName": "OpenEndedQuestionCorrectAnswer",
+          "schema": {
+            "$ref": "#/backend/entities/OpenEndedQuestionCorrectAnswer"
+          },
+          "description": "Document storing the correct answer for an open-ended question. This data is strictly for admin-only access and is never exposed to students. Includes `examId` and `questionId` for explicit linkage.",
+          "params": [
+            {
+              "name": "examId",
+              "description": "The unique identifier of the parent exam."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the parent question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "exams/{examId}/questions/{questionId}/explanationQuestionCriteria",
+        "definition": {
+          "entityName": "ExplanationQuestionCriteria",
+          "schema": {
+            "$ref": "#/backend/entities/ExplanationQuestionCriteria"
+          },
+          "description": "Document storing the correct final answer and AI evaluation criteria for an explanation-based question. This data is strictly for admin-only access and is never exposed to students. Includes `examId` and `questionId` for explicit linkage.",
+          "params": [
+            {
+              "name": "examId",
+              "description": "The unique identifier of the parent exam."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the parent question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "exams/{examId}/accessCodes/{accessCodeId}",
+        "definition": {
+          "entityName": "ExamAccessCode",
+          "schema": {
+            "$ref": "#/backend/entities/ExamAccessCode"
+          },
+          "description": "Subcollection for unique 6-character alphanumeric access codes. Admins create and manage. Students use these codes for one-time exam entry and results viewing. Includes `examId` for explicit linkage. `isUsedForEntry` and `studentAttemptId` are updated by students during exam start.",
+          "params": [
+            {
+              "name": "examId",
+              "description": "The unique identifier of the parent exam."
+            },
+            {
+              "name": "accessCodeId",
+              "description": "The unique identifier for the exam access code."
+            }
+          ]
+        }
+      },
+      {
+        "path": "studentAttempts/{studentAttemptId}",
+        "definition": {
+          "entityName": "StudentAttempt",
+          "schema": {
+            "$ref": "#/backend/entities/StudentAttempt"
+          },
+          "description": "Top-level collection representing a student's single attempt at an exam. This is the root for all student-owned, in-progress exam data. Includes denormalized `studentAuthUid` (Firebase anonymous UID) for authorization independence, `examId`, and `examAccessCodeId` for context.",
+          "params": [
+            {
+              "name": "studentAttemptId",
+              "description": "The unique identifier for the student's exam attempt."
+            }
+          ]
+        }
+      },
+      {
+        "path": "studentAttempts/{studentAttemptId}/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Subcollection containing copies of exam questions specific to a student's attempt. Includes denormalized `studentAuthUid`, `examId`, and `studentAttemptId` for robust, authorization-independent access control by the student and QAP compliance for lists.",
+          "params": [
+            {
+              "name": "studentAttemptId",
+              "description": "The unique identifier of the parent student attempt."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier for the question within this attempt."
+            }
+          ]
+        }
+      },
+      {
+        "path": "studentAttempts/{studentAttemptId}/questions/{questionId}/multipleChoiceOptions/{optionId}",
+        "definition": {
+          "entityName": "MultipleChoiceOption",
+          "schema": {
+            "$ref": "#/backend/entities/MultipleChoiceOption"
+          },
+          "description": "Subcollection containing copies of multiple-choice options for a specific question within a student's attempt. Includes denormalized `studentAuthUid`, `examId`, `studentAttemptId`, and `questionId` for robust, authorization-independent access control.",
+          "params": [
+            {
+              "name": "studentAttemptId",
+              "description": "The unique identifier of the parent student attempt."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the parent question within this attempt."
+            },
+            {
+              "name": "optionId",
+              "description": "The unique identifier for the multiple-choice option."
+            }
+          ]
+        }
+      },
+      {
+        "path": "studentAttempts/{studentAttemptId}/studentAnswers/{studentAnswerId}",
+        "definition": {
+          "entityName": "StudentAnswer",
+          "schema": {
+            "$ref": "#/backend/entities/StudentAnswer"
+          },
+          "description": "Subcollection recording a student's submitted answers for questions within their attempt. Includes denormalized `studentAuthUid`, `examId`, `studentAttemptId`, and `questionId` for robust, authorization-independent access control by the student and QAP compliance for lists.",
+          "params": [
+            {
+              "name": "studentAttemptId",
+              "description": "The unique identifier of the parent student attempt."
+            },
+            {
+              "name": "studentAnswerId",
+              "description": "The unique identifier for the student's answer."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure for ImtahanFlow is designed with a strong emphasis on Authorization Independence, Structural Segregation, and adherence to QAP (Query as Permission) principles. This is achieved through strategic denormalization and a clear separation of administrative and student data paths.\n\n**Authorization Independence and Denormalization Strategy:**\n\n1.  **Admin Role:** A top-level `roles_admin/{adminUid}` collection is used for Database Access Control (DBAC). An admin's Firebase Authentication UID (derived from a pre-registered admin user after a successful login via the secret URL and password) must exist as a document ID in this collection. This enables straightforward rules like `allow read, write: if exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));`, eliminating complex `get()` calls for admin authorization.\n\n2.  **Exam Definitions (`exams/{examId}` and subcollections):** These collections (`Exam`, `Question`, `MultipleChoiceOption`, `OpenEndedQuestionCorrectAnswer`, `ExplanationQuestionCriteria`) are primarily for administrative CRUD operations. Their authorization relies solely on the `roles_admin` check. Students **cannot** directly access questions or correct answers from these master collections. This segregation ensures that sensitive information (correct answers) is never exposed to students.\n\n3.  **Exam Access Codes (`exams/{examId}/accessCodes/{accessCodeId}`):** These documents include `examId` for context. A student can `get` an `accessCodeId` document by querying its unique `code` field. The student can then *atomically update* the `isUsedForEntry` and `studentAttemptId` fields only if `isUsedForEntry` is currently `false`. This design allows for a secure, one-time usage mechanism without complex `get()` calls to other collections for authorization during the initial entry.\n\n4.  **Student Attempts (`studentAttempts/{studentAttemptId}` and subcollections):** This is the core of student-specific data and a critical area for denormalization to achieve Authorization Independence and QAPs.\n    *   **`StudentAttempt` documents (e.g., `studentAttempts/{studentAttemptId}`):** Each `StudentAttempt` document *must* contain the `studentAuthUid` field, which stores the Firebase anonymous authentication UID of the student taking the exam. This `studentAuthUid` is generated and assigned upon the student's first use of an `ExamAccessCode` to start an exam. It also denormalizes `examId` and `examAccessCodeId` for complete context within the document.\n    *   **Student-Specific Questions and Options (`studentAttempts/{studentAttemptId}/questions/{questionId}` and `studentAttempts/{studentAttemptId}/questions/{questionId}/multipleChoiceOptions/{optionId}`):** When a student begins an exam, copies of the relevant `Question` and `MultipleChoiceOption` documents (excluding correct answers) are created under their specific `studentAttempts/{studentAttemptId}` path. Crucially, each copied `Question` and `MultipleChoiceOption` document **includes denormalized fields**: `studentAuthUid`, `examId`, `studentAttemptId`, and `questionId` (for options). This extensive denormalization means that rules for these documents can simply check `request.auth.uid == resource.data.studentAuthUid` or `request.auth.uid == get(/databases/$(database)/documents/studentAttempts/$(studentAttemptId)).data.studentAuthUid`. This ensures QAP compliance for listing all questions and options pertinent to *their specific attempt*.\n    *   **Student Answers (`studentAttempts/{studentAttemptId}/studentAnswers/{studentAnswerId}`):** Each `StudentAnswer` document similarly **includes denormalized fields**: `studentAuthUid`, `examId`, `studentAttemptId`, and `questionId`. This enables direct rule checks like `request.auth.uid == resource.data.studentAuthUid` for creating, updating, and reading answers, preventing any `get()` calls to other root collections.\n\n**QAPs (Query as Permission) Support:**\n\n*   **Admin Listing:** Admins can list all `Exams`, `Questions`, `AccessCodes`, `StudentAttempts`, and `StudentAnswers` by applying the global admin role check (`exists(/roles_admin/$(request.auth.uid))`). This is inherently QAP compliant as the `list` operation is permitted if the user is an admin.\n*   **Student Listing:** Students are restricted from broad `list` operations. Instead:\n    *   To start an exam: They `get` a specific `ExamAccessCode` by its known `code` (client-side query). This is not a `list` against a collection where security relies on filtering results.\n    *   To take an exam/view questions: Once a `StudentAttempt` is established, the student can `list` questions and options from `studentAttempts/{studentAttemptId}/questions`. Because each document in this path (and its subcollections) contains the `studentAuthUid`, the rule `request.auth.uid == resource.data.studentAuthUid` allows the list to proceed, ensuring all returned documents belong to the authenticated student, fulfilling QAP.\n    *   To submit/view answers: Similarly, students can `list` their `studentAnswers` from `studentAttempts/{studentAttemptId}/studentAnswers` using the `request.auth.uid == resource.data.studentAuthUid` check, which is QAP compliant."
+  }
+}
