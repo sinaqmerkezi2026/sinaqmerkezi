@@ -1,3 +1,16 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "exam-hero",
+      "description": "Student taking an exam",
+      "imageUrl": "https://picsum.photos/seed/exam1/1200/800",
+      "imageHint": "online exam"
+    },
+    {
+      "id": "math-question",
+      "description": "Mathematics problem visual",
+      "imageUrl": "https://picsum.photos/seed/math/600/400",
+      "imageHint": "mathematics formula"
+    }
+  ]
 }
