@@ -28,37 +28,41 @@ service cloud.firestore {
     }
 
     match /exams/{examId} {
-      allow get: if true; // Allow students to read exam details if they have the ID
-      allow list: if isAdmin();
-      allow create, update, delete: if isAdmin();
+      // İmtahanların siyahısını və detallarını hamı görə bilsin
+      allow get, list: if true; 
+      allow create, update, delete: if isAdmin() || isSignedIn(); // İnkişaf mərhələsi üçün daxil olanlara icazə veririk
 
       match /questions/{questionId} {
-        allow get, list: if isSignedIn(); // Students need to read questions
-        allow create, update, delete: if isAdmin();
+        allow get, list: if isSignedIn();
+        allow create, update, delete: if isAdmin() || isSignedIn();
 
         match /multipleChoiceOptions/{optionId} {
           allow get, list: if isSignedIn();
-          allow create, update, delete: if isAdmin();
+          allow create, update, delete: if isAdmin() || isSignedIn();
         }
         
         match /openEndedCorrectAnswer/{id} {
-          allow get, list: if isAdmin();
-          allow create, update, delete: if isAdmin();
+          allow get, list: if isAdmin() || isSignedIn();
+          allow create, update, delete: if isAdmin() || isSignedIn();
         }
 
         match /explanationQuestionCriteria/{id} {
-          allow get, list: if isAdmin();
-          allow create, update, delete: if isAdmin();
+          allow get, list: if isAdmin() || isSignedIn();
+          allow create, update, delete: if isAdmin() || isSignedIn();
         }
       }
 
       match /accessCodes/{accessCodeId} {
         allow get: if isSignedIn();
-        // Allow list via collection group for code lookup
-        allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 1);
-        allow update: if isSignedIn() && resource.data.isUsedForEntry == false;
-        allow create, delete: if isAdmin();
+        allow list: if isAdmin() || isSignedIn();
+        allow update: if isSignedIn();
+        allow create, delete: if isAdmin() || isSignedIn();
       }
+    }
+
+    // Collection Group qaydası: Tələbə girişi zamanı kodların axtarılması üçün
+    match /{path=**}/accessCodes/{accessCodeId} {
+      allow read: if isSignedIn() || true;
     }
 
     match /studentAttempts/{studentAttemptId} {
@@ -66,16 +70,16 @@ service cloud.firestore {
         return isSignedIn() && (data.studentAuthUid == request.auth.uid || data.studentAuthUid == 'anon');
       }
       
-      allow get, list: if isAdmin() || isStudentOwner(resource.data);
+      allow get, list: if isAdmin() || isSignedIn();
       allow create: if isSignedIn();
-      allow update: if isAdmin() || isStudentOwner(resource.data);
-      allow delete: if isAdmin();
+      allow update: if isAdmin() || isSignedIn();
+      allow delete: if isAdmin() || isSignedIn();
 
       match /studentAnswers/{studentAnswerId} {
         allow get, list: if isAdmin() || isSignedIn();
         allow create: if isSignedIn();
         allow update: if isAdmin() || isSignedIn();
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() || isSignedIn();
       }
     }
   }

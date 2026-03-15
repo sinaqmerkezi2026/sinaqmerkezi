@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -8,15 +9,19 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, ShieldCheck } from 'lucide-react';
+import { useAuth, initiateAnonymousSignIn } from '@/firebase';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === 'Nicat_2010') {
+      // Firebase-ə daxil oluruq ki, Security Rules bizə icazə versin
+      initiateAnonymousSignIn(auth);
       sessionStorage.setItem('admin_auth', 'true');
       router.push('/nicat/admin/dashboard');
     } else {

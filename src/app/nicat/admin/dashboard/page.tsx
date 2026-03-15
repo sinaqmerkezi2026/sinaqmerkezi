@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Plus, Calendar, Clock, DollarSign, ListChecks, Edit, LayoutDashboard, Database } from 'lucide-react';
+import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, Database } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
         ) : !exams || exams.length === 0 ? (
           <Card className="border-dashed border-2 py-20 flex flex-col items-center justify-center text-slate-400">
             <Plus className="w-12 h-12 mb-4 opacity-20" />
-            <p className="text-lg">Hələ heç bir imtahan yaradılmayıb</p>
+            <p className="text-lg">Hələ heç bir imtahan yaradılmayan</p>
             <Button variant="link" onClick={createNewExam}>İlk imtahanı yarat</Button>
           </Card>
         ) : (
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
                 <CardContent className="space-y-3 pt-4">
                   <div className="flex items-center text-sm text-slate-500 gap-2">
                     <Calendar className="w-4 h-4" />
-                    <span>{new Date(exam.activeStartDate).toLocaleDateString()} - {new Date(exam.activeEndDate).toLocaleDateString()}</span>
+                    <span>{exam.activeStartDate} - {exam.activeEndDate}</span>
                   </div>
                   <div className="flex items-center text-sm text-slate-500 gap-2">
                     <Clock className="w-4 h-4" />
