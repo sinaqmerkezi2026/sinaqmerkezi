@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Plus, Calendar, Clock, DollarSign, ListChecks, Edit, LayoutDashboard, Database } from 'lucide-react';
 import { db, Exam } from '@/lib/store';
-import { Badge } from '@/badge';
+import { Badge } from '@/components/ui/badge';
 import { useFirestore } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
