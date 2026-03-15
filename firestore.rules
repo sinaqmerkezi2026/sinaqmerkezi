@@ -2,59 +2,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- GLOBAL HELPER FUNCTIONS ---
-    // Auth ləğv edildiyi üçün bütün sorğulara icazə veririk
-    function isAllowed() {
-      return true;
-    }
-
-    // --- TEST RULES ---
-    match /test_messages/{id} {
-      allow read, write: if isAllowed();
-    }
-
-    // --- COLLECTION RULES ---
-
-    match /roles_admin/{adminUid} {
-      allow read, write: if isAllowed();
-    }
-
-    match /exams/{examId} {
-      allow read, write: if isAllowed();
-
-      match /questions/{questionId} {
-        allow read, write: if isAllowed();
-
-        match /multipleChoiceOptions/{optionId} {
-          allow read, write: if isAllowed();
-        }
-        
-        match /openEndedCorrectAnswer/{id} {
-          allow read, write: if isAllowed();
-        }
-
-        match /explanationQuestionCriteria/{id} {
-          allow read, write: if isAllowed();
-        }
-      }
-
-      match /accessCodes/{accessCodeId} {
-        allow read, write: if isAllowed();
-      }
-    }
-
-    // Collection Group qaydası
-    match /{path=**}/accessCodes/{accessCodeId} {
-      allow read, write: if isAllowed();
-    }
-
-    match /studentAttempts/{studentAttemptId} {
-      allow read, write: if isAllowed();
-
-      match /studentAnswers/{studentAnswerId} {
-        allow read, write: if isAllowed();
-      }
+    // Auth tamamilə ləğv edildiyi üçün bütün kolleksiyalara hər kəs üçün tam icazə verilir
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }

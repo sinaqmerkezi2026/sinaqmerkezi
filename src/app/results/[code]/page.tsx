@@ -1,49 +1,85 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { db, Exam, Attempt } from '@/lib/store';
-import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit } from 'lucide-react';
+import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2 } from 'lucide-react';
 import { gradeExplanationQuestion } from '@/ai/flows/grade-explanation-question-flow';
-import { Progress } from '@/components/ui/progress';
+import { useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { collectionGroup, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export default function Results() {
   const { code } = useParams();
   const router = useRouter();
-  const [exam, setExam] = useState<Exam | null>(null);
-  const [attempt, setAttempt] = useState<Attempt | null>(null);
+  const firestore = useFirestore();
+
+  const [exam, setExam] = useState<any>(null);
+  const [attempt, setAttempt] = useState<any>(null);
   const [aiFeedbacks, setAiFeedbacks] = useState<Record<string, { score: number, feedback: string }>>({});
   const [isGrading, setIsGrading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const e = db.getExamByCode(code as string);
-    const a = db.getAttemptByCode(code as string);
+    async function fetchData() {
+      if (!code) return;
+      setIsLoading(true);
+      try {
+        // Find the access code to get examId and studentAttemptId
+        const codesRef = collectionGroup(firestore, 'accessCodes');
+        const q = query(codesRef, where('code', '==', code.toString().toUpperCase()));
+        const querySnapshot = await getDocs(q);
 
-    if (!e || !a) {
-      router.push('/');
-      return;
+        if (querySnapshot.empty) {
+          router.push('/');
+          return;
+        }
+
+        const codeData = querySnapshot.docs[0].data();
+        if (!codeData.studentAttemptId) {
+          router.push('/');
+          return;
+        }
+
+        // Fetch exam data
+        const examDoc = await getDoc(doc(firestore, 'exams', codeData.examId));
+        // Fetch attempt data
+        const attemptDoc = await getDoc(doc(firestore, 'studentAttempts', codeData.studentAttemptId));
+
+        if (!examDoc.exists() || !attemptDoc.exists()) {
+          router.push('/');
+          return;
+        }
+
+        const examData = examDoc.data();
+        const attemptData = attemptDoc.data();
+
+        setExam(examData);
+        setAttempt(attemptData);
+
+        if (attemptData.results) {
+          setAiFeedbacks(attemptData.results);
+        } else {
+          await gradeExplanations(examData, attemptData);
+        }
+      } catch (error) {
+        console.error("Error fetching results:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
-    setExam(e);
-    setAttempt(a);
+    fetchData();
+  }, [code, firestore, router]);
 
-    // If we haven't graded explanations yet, do it now
-    if (a.results) {
-      setAiFeedbacks(a.results);
-    } else {
-      gradeExplanations(e, a);
-    }
-  }, [code, router]);
-
-  const gradeExplanations = async (e: Exam, a: Attempt) => {
+  const gradeExplanations = async (e: any, a: any) => {
     setIsGrading(true);
     const feedbacks: Record<string, any> = {};
     
-    for (const q of e.questions) {
+    for (const q of e.questions || []) {
       if (q.type === 'explanation') {
-        const studentAns = a.answers[q.id];
+        const studentAns = a.answers?.[q.id];
         if (studentAns?.explanation) {
           try {
             const result = await gradeExplanationQuestion({
@@ -61,35 +97,51 @@ export default function Results() {
     }
     
     setAiFeedbacks(feedbacks);
-    const updated = { ...a, results: feedbacks };
-    db.saveAttempt(updated);
+    
+    // Save to Firestore
+    try {
+      const attemptRef = doc(firestore, 'studentAttempts', a.id);
+      await updateDoc(attemptRef, { results: feedbacks });
+    } catch (e) {
+      console.error("Failed to save AI results:", e);
+    }
+    
     setIsGrading(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+          <p className="text-slate-500 font-medium">Nəticələr yüklənir...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!exam || !attempt) return null;
 
   const calculateTotalScore = () => {
     let score = 0;
-    exam.questions.forEach(q => {
-      const ans = attempt.answers[q.id];
+    const questions = exam.questions || [];
+    questions.forEach((q: any) => {
+      const ans = attempt.answers?.[q.id];
       if (!ans) return;
 
       if (q.type === 'mcq' || q.type === 'open') {
-        if (ans.finalAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
+        if (ans.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase()) {
           score += 1;
         }
       } else if (q.type === 'explanation') {
-        // Only if final answer is correct, we add AI score. 
-        // Or we can add partial scores even if final is wrong? 
-        // Requirement says: "If final answer doesn't match, system notes it. If matches, AI grades explanation."
-        const finalCorrect = ans.finalAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
+        const finalCorrect = ans.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase();
         const aiResult = aiFeedbacks[q.id];
         if (finalCorrect && aiResult) {
           score += aiResult.score;
         }
       }
     });
-    return (score / exam.questions.length) * 100;
+    return questions.length > 0 ? (score / questions.length) * 100 : 0;
   };
 
   const totalScore = calculateTotalScore();
@@ -114,7 +166,7 @@ export default function Results() {
           </div>
           <CardTitle className="text-4xl font-bold mb-2">Təbriklər!</CardTitle>
           <CardDescription className="text-primary-foreground/80 text-lg">
-            {attempt.studentName} {attempt.studentSurname}, imtahanı tamamladınız.
+            {attempt.studentFirstName} {attempt.studentLastName}, imtahanı tamamladınız.
           </CardDescription>
           <div className="mt-8">
             <div className="text-7xl font-black mb-2">{Math.round(totalScore)}%</div>
@@ -126,9 +178,9 @@ export default function Results() {
           <Card className="p-6">
             <h3 className="text-slate-500 text-sm font-bold uppercase mb-4">Statistika</h3>
             <div className="space-y-4">
-              {exam.questions.map((q, i) => {
-                const ans = attempt.answers[q.id];
-                const isCorrect = ans?.finalAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
+              {(exam.questions || []).map((q: any, i: number) => {
+                const ans = attempt.answers?.[q.id];
+                const isCorrect = ans?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase();
                 return (
                   <div key={q.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <span className="text-slate-700 font-medium">Sual {i + 1}</span>
@@ -136,7 +188,9 @@ export default function Results() {
                       {q.type === 'explanation' ? (
                         <div className="flex items-center gap-2">
                           {isCorrect ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">AI: {aiFeedbacks[q.id]?.score ? `${(aiFeedbacks[q.id].score * 100).toFixed(0)}%` : '...'}</span>
+                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                            AI: {aiFeedbacks[q.id]?.score !== undefined ? `${(aiFeedbacks[q.id].score * 100).toFixed(0)}%` : '...'}
+                          </span>
                         </div>
                       ) : (
                         isCorrect ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />
@@ -157,12 +211,14 @@ export default function Results() {
                   <p>AI izahları yoxlayır...</p>
                 </div>
               ) : (
-                exam.questions.filter(q => q.type === 'explanation').map(q => (
+                (exam.questions || []).filter((q: any) => q.type === 'explanation').map((q: any) => (
                   <div key={q.id} className="bg-slate-50 p-4 rounded-xl border space-y-3">
                     <p className="font-bold text-sm">Sual: {q.text.substring(0, 50)}...</p>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="bg-white px-2 py-1 rounded border">Son cavab: {attempt.answers[q.id]?.finalAnswer === q.correctAnswer ? '✅ Doğru' : '❌ Yanlış'}</span>
-                      <span className="font-bold text-primary">Bal: {aiFeedbacks[q.id]?.score || 0}</span>
+                      <span className="bg-white px-2 py-1 rounded border">
+                        Son cavab: {attempt.answers?.[q.id]?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase() ? '✅ Doğru' : '❌ Yanlış'}
+                      </span>
+                      <span className="font-bold text-primary">Bal: {aiFeedbacks[q.id]?.score !== undefined ? (aiFeedbacks[q.id].score * 100).toFixed(0) : 0}%</span>
                     </div>
                     <div className="bg-white p-3 rounded border text-xs leading-relaxed text-slate-600">
                       <p className="font-bold mb-1 text-primary flex items-center gap-1">
