@@ -14,6 +14,7 @@ import { z } from 'genkit';
 const GradeExplanationQuestionInputSchema = z.object({
   studentExplanation: z.string().describe("The student's written explanation for a question."),
   adminExplanationCriterion: z.string().describe("The admin's predefined ideal explanation or grading criterion for the question."),
+  isFinalAnswerCorrect: z.boolean().describe("Whether the student's final numerical or short answer was correct according to the system."),
 });
 export type GradeExplanationQuestionInput = z.infer<typeof GradeExplanationQuestionInputSchema>;
 
@@ -25,8 +26,8 @@ const GradeExplanationQuestionOutputSchema = z.object({
     z.literal(1 / 2),
     z.literal(2 / 3),
     z.literal(1),
-  ]).describe("The score assigned to the student's explanation based on its congruence with the admin's criterion. Possible values are 0, 1/3, 1/2, 2/3, or 1."),
-  feedback: z.string().describe("Detailed feedback explaining why the specific score was awarded, including reasons for score reduction or full credit."),
+  ]).describe("The score assigned to the student's explanation. Possible values are 0, 1/3, 1/2, 2/3, or 1."),
+  feedback: z.string().describe("Detailed feedback explaining why the specific score was awarded."),
 });
 export type GradeExplanationQuestionOutput = z.infer<typeof GradeExplanationQuestionOutputSchema>;
 
@@ -38,25 +39,23 @@ const prompt = ai.definePrompt({
   name: 'gradeExplanationQuestionPrompt',
   input: { schema: GradeExplanationQuestionInputSchema },
   output: { schema: GradeExplanationQuestionOutputSchema },
-  prompt: `You are an expert examiner tasked with grading student explanations.
-Your goal is to compare a student's explanation with a predefined ideal explanation (criterion) and assign a score.
-You must also provide clear, actionable feedback explaining your scoring decision.
+  prompt: `Sən tələbələrin yazılı izahlarını yoxlayan insaflı bir imtahan rəhbərisən.
+Məqsədin tələbənin izahını verilmiş meyarlar ilə müqayisə edib ədalətli (hətta bir az güzəştli) qiymət verməkdir.
 
-Scoring Scale:
-- 0: The explanation is completely incorrect or irrelevant.
-- 1/3: The explanation has minimal correct points or significant misunderstandings.
-- 1/2: The explanation is partially correct, addressing some key aspects but missing others or containing minor errors.
-- 2/3: The explanation is mostly correct and demonstrates a good understanding, but lacks minor details or has slight inaccuracies.
-- 1: The explanation is fully correct, comprehensive, and aligns perfectly with the criterion.
+Qiymətləndirmə Təlimatı:
+1. Əgər son cavab (isFinalAnswerCorrect = true) DOĞRUDURSA və tələbənin izahı "pis deyilsə" (yəni mövzu ilə əlaqəlidirsə və məntiqlidirsə), tam bal (1) ver. İzahın meyarla tam eyni olması vacib deyil, əsas olan tələbənin məntiqi ifadə etməsidir.
+2. Əgər son cavab (isFinalAnswerCorrect = false) SƏHVDİRSƏ, lakin izahda müəyyən düzgün məntiqlər və ya həll yolu varsa, izahın keyfiyyətindən asılı olaraq 2/3, 1/2 və ya 1/3 bal ver.
+3. Çox sərt olma, tələbənin dərki və çəkdiyi zəhməti nəzərə al.
 
-Student's Explanation:
+Tələbənin İzahı:
 {{{studentExplanation}}}
 
-Admin's Ideal Explanation/Criterion:
+Meyar/Doğru İzah:
 {{{adminExplanationCriterion}}}
 
-Based on the comparison, determine the most appropriate score (0, 1/3, 1/2, 2/3, or 1) and provide detailed feedback justifying your choice.
-The feedback should clearly state why a certain score was given, highlighting correct points, areas for improvement, or reasons for full credit.
+Son Cavabın Doğruluğu: {{#if isFinalAnswerCorrect}}DOĞRU{{else}}SƏHV{{/if}}
+
+Zəhmət olmasa yuxarıdakı təlimatlara uyğun olaraq ən uyğun balı (0, 1/3, 1/2, 2/3 və ya 1) seç və qısa, dəstəkləyici rəy yaz.
 `
 });
 

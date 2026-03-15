@@ -85,11 +85,16 @@ export default function Results() {
     
     for (const q of explanationQuestions) {
       const studentAns = a.answers?.[q.id];
-      if (studentAns?.explanation) {
+      const studentFinal = studentAns?.finalAnswer?.trim().toLowerCase();
+      const correctFinal = q.correctAnswer?.trim().toLowerCase();
+      const isFinalCorrect = studentFinal === correctFinal;
+
+      if (studentAns?.explanation || studentAns?.finalAnswer) {
         try {
           const result = await gradeExplanationQuestion({
-            studentExplanation: studentAns.explanation,
-            adminExplanationCriterion: q.explanationCriterion || q.correctAnswer
+            studentExplanation: studentAns.explanation || "",
+            adminExplanationCriterion: q.explanationCriterion || q.correctAnswer,
+            isFinalAnswerCorrect: isFinalCorrect
           });
           feedbacks[q.id] = result;
         } catch (err) {
@@ -97,7 +102,7 @@ export default function Results() {
           feedbacks[q.id] = { score: 0, feedback: 'AI qiymətləndirmə zamanı xəta baş verdi.' };
         }
       } else {
-        feedbacks[q.id] = { score: 0, feedback: 'İzah daxil edilməyib.' };
+        feedbacks[q.id] = { score: 0, feedback: 'Cavab və ya izah daxil edilməyib.' };
       }
     }
     
@@ -140,14 +145,14 @@ export default function Results() {
       if (q.type === 'mcq' || q.type === 'open') {
         if (studentFinal === correctFinal) earnedPoints += 1;
       } else if (q.type === 'explanation') {
-        const isFinalCorrect = studentFinal === correctFinal;
+        // AI score handles both correctness and explanation quality
         const aiResult = aiFeedbacks[q.id];
-        if (isFinalCorrect && aiResult) earnedPoints += aiResult.score;
+        if (aiResult) earnedPoints += aiResult.score;
       }
     });
     
     return questions.length > 0 ? (earnedPoints / questions.length) * 100 : 0;
-  };
+  }
 
   const totalScore = calculateTotalScore();
 
@@ -212,7 +217,7 @@ export default function Results() {
                       <div className="flex items-center gap-5">
                         <div className={cn(
                           "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm",
-                          isCorrect ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                          (q.type === 'explanation' ? (aiFeedbacks[q.id]?.score || 0) > 0 : isCorrect) ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
                         )}>
                           {i + 1}
                         </div>
@@ -227,7 +232,7 @@ export default function Results() {
                             <span className="text-sm px-4 py-1.5 bg-primary/20 text-primary font-black rounded-xl">
                               AI: {aiFeedbacks[q.id]?.score !== undefined ? `${(aiFeedbacks[q.id].score * 100).toFixed(0)}%` : '...'}
                             </span>
-                            {isCorrect ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <XCircle className="w-6 h-6 text-red-500" />}
+                            {isCorrect ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <XCircle className="w-6 h-6 text-orange-500" />}
                           </div>
                         ) : (
                           isCorrect ? <CheckCircle2 className="w-8 h-8 text-green-500" /> : <XCircle className="w-8 h-8 text-red-500" />
