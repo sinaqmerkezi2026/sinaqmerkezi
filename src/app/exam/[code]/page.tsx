@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ export default function ExamSession() {
   const firestore = useFirestore();
 
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
 
@@ -42,6 +42,24 @@ export default function ExamSession() {
   );
   const { data: exam, isLoading: isExamLoading } = useDoc(examRef);
 
+  const handleFinish = useCallback(async () => {
+    if (isSubmitting || !attempt || !attemptRef) return;
+    setIsSubmitting(true);
+    
+    try {
+      await updateDoc(attemptRef, { 
+        endTime: Date.now(),
+        isCompleted: true 
+      });
+      toast({ title: 'İmtahan bitdi', description: 'Nəticələriniz hesablanır...' });
+      router.push(`/results/${code}`);
+    } catch (e) {
+      setIsSubmitting(false);
+      toast({ title: 'Xəta', description: 'İmtahanı bitirmək mümkün olmadı.', variant: 'destructive' });
+    }
+  }, [attempt, attemptRef, code, isSubmitting, router, toast]);
+
+  // Initial redirect check
   useEffect(() => {
     if (attemptId && !isAttemptLoading) {
       if (!attempt) {
@@ -55,29 +73,37 @@ export default function ExamSession() {
     }
   }, [attempt, isAttemptLoading, attemptId, router, code]);
 
+  // Initialize Timer
   useEffect(() => {
-    if (exam && attempt && !attempt.endTime) {
-      const elapsed = Math.floor((Date.now() - attempt.startTime) / 1000);
-      const totalSeconds = (exam.durationMinutes || 60) * 60;
-      const remaining = Math.max(0, totalSeconds - elapsed);
+    if (exam && attempt && !attempt.endTime && timeLeft === null) {
+      const startTime = attempt.startTime;
+      const durationSeconds = (exam.durationMinutes || 60) * 60;
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.max(0, durationSeconds - elapsedSeconds);
       setTimeLeft(remaining);
     }
-  }, [exam, attempt]);
+  }, [exam, attempt, timeLeft]);
 
+  // Timer Countdown Logic
   useEffect(() => {
-    if (timeLeft <= 0 || !hasCheckedStatus) return;
-    const timer = setInterval(() => {
+    if (timeLeft === null || timeLeft <= 0 || !hasCheckedStatus) {
+      if (timeLeft === 0) handleFinish();
+      return;
+    }
+
+    const timerId = setInterval(() => {
       setTimeLeft(prev => {
+        if (prev === null) return null;
         if (prev <= 1) {
-          clearInterval(timer);
-          handleFinish();
+          clearInterval(timerId);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(timer);
-  }, [hasCheckedStatus]); // timeLeft dependenciesi silindi ki, hər saniyə yeni interval yaranmasın
+
+    return () => clearInterval(timerId);
+  }, [timeLeft === null, hasCheckedStatus, handleFinish]);
 
   const updateAnswer = async (qId: string, finalAnswer: string, explanation?: string) => {
     if (!attempt || !attemptRef) return;
@@ -99,21 +125,11 @@ export default function ExamSession() {
     }
   };
 
-  const handleFinish = async () => {
-    if (isSubmitting || !attempt || !attemptRef) return;
-    setIsSubmitting(true);
-    
-    try {
-      await updateDoc(attemptRef, { 
-        endTime: Date.now(),
-        isCompleted: true 
-      });
-      toast({ title: 'İmtahan bitdi', description: 'Nəticələriniz hesablanır...' });
-      router.push(`/results/${code}`);
-    } catch (e) {
-      setIsSubmitting(false);
-      toast({ title: 'Xəta', description: 'İmtahanı bitirmək mümkün olmadı.', variant: 'destructive' });
-    }
+  const formatTime = (seconds: number | null) => {
+    if (seconds === null) return "--:--";
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
   if (!attemptId) {
@@ -130,7 +146,7 @@ export default function ExamSession() {
     );
   }
 
-  if (isAttemptLoading || !hasCheckedStatus) {
+  if (isAttemptLoading || !hasCheckedStatus || timeLeft === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-6">
@@ -147,12 +163,6 @@ export default function ExamSession() {
   const questions = exam?.questions || [];
   const currentQ = questions[currentIdx];
   const progress = questions.length > 0 ? ((currentIdx + 1) / questions.length) * 100 : 0;
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
 
   if (!exam || questions.length === 0) {
     return (
@@ -182,7 +192,7 @@ export default function ExamSession() {
 
         <div className="flex items-center gap-6">
           <div className={cn(
-            "flex items-center gap-3 px-6 py-2 rounded-2xl font-mono text-xl font-black transition-all duration-500 shadow-inner",
+            "flex items-center gap-3 px-6 py-2 rounded-2xl font-mono text-xl font-black transition-all duration-500 shadow-inner min-w-[120px] justify-center",
             timeLeft < 300 ? 'bg-red-500/10 text-red-500 animate-pulse border-2 border-red-500/20' : 'bg-muted/50 text-foreground'
           )}>
             <Timer className={cn("w-5 h-5", timeLeft < 300 ? "text-red-500" : "text-muted-foreground")} />
