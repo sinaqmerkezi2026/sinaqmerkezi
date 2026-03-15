@@ -4,7 +4,7 @@ import {Toaster} from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'ImtahanFlow - Professional Online Exams',
+  title: 'Sınaq Mərkəzi - Professional Online Exams',
   description: 'A comprehensive online examination system powered by AI.',
 };
 

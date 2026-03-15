@@ -112,7 +112,7 @@ export default function StudentEntry() {
       <header className="w-full max-w-6xl flex justify-between items-center z-20">
         <div className="flex items-center gap-2">
           <GraduationCap className="w-8 h-8 text-primary" />
-          <span className="font-black text-xl tracking-tight">Imtahan<span className="text-primary">Flow</span></span>
+          <span className="font-black text-xl tracking-tight">Sınaq<span className="text-primary">Mərkəzi</span></span>
         </div>
         <ThemeToggle />
       </header>
@@ -268,7 +268,7 @@ export default function StudentEntry() {
         </div>
         
         <p className="text-center text-muted-foreground/50 text-sm font-medium pb-8">
-          &copy; {new Date().getFullYear()} ImtahanFlow. Bütün hüquqlar qorunur.
+          &copy; {new Date().getFullYear()} Sınaq Mərkəzi. Bütün hüquqlar qorunur.
         </p>
       </div>
     </div>
