@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -6,56 +7,87 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { db } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, GraduationCap, Ticket } from 'lucide-react';
+import { LogIn, GraduationCap, Ticket, Loader2 } from 'lucide-react';
+import { useFirestore, useAuth, initiateAnonymousSignIn } from '@/firebase';
+import { collectionGroup, query, where, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function StudentEntry() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const auth = useAuth();
 
-  const handleEnter = () => {
+  const handleEnter = async () => {
     if (!code || !name || !surname) {
       toast({ title: 'Xəta', description: 'Zəhmət olmasa bütün xanaları doldurun.', variant: 'destructive' });
       return;
     }
 
     setIsLoading(true);
-    const exam = db.getExamByCode(code);
 
-    if (!exam) {
-      toast({ title: 'Xəta', description: 'Daxil etdiyiniz kod yanlışdır.', variant: 'destructive' });
-      setIsLoading(false);
-      return;
-    }
+    try {
+      // 1. Sign in anonymously
+      initiateAnonymousSignIn(auth);
 
-    const attempt = db.getAttemptByCode(code);
-    
-    // If exam is already finished with this code
-    if (attempt && attempt.endTime) {
-      router.push(`/results/${code}`);
-      return;
-    }
+      // 2. Search for the access code across all exams
+      // Note: This requires a Collection Group Index in Firestore for 'accessCodes'
+      const codesRef = collectionGroup(firestore, 'accessCodes');
+      const q = query(codesRef, where('code', '==', code.toUpperCase()));
+      const querySnapshot = await getDocs(q);
 
-    // If starting fresh or resuming
-    if (!attempt) {
+      if (querySnapshot.empty) {
+        toast({ title: 'Xəta', description: 'Daxil etdiyiniz kod yanlışdır.', variant: 'destructive' });
+        setIsLoading(false);
+        return;
+      }
+
+      const codeDoc = querySnapshot.docs[0];
+      const codeData = codeDoc.data();
+
+      if (codeData.isUsedForEntry) {
+        // If used, redirect to results (if the student matches or logic permits)
+        router.push(`/results/${code.toUpperCase()}`);
+        return;
+      }
+
+      // 3. Create a new StudentAttempt
+      const attemptId = Math.random().toString(36).substr(2, 9);
+      const attemptRef = doc(firestore, 'studentAttempts', attemptId);
+      
       const newAttempt = {
-        id: Math.random().toString(36).substr(2, 9),
-        examId: exam.id,
-        code: code,
-        studentName: name,
-        studentSurname: surname,
-        answers: {},
-        startTime: Date.now(),
+        id: attemptId,
+        examId: codeData.examId,
+        examAccessCodeId: codeDoc.id,
+        studentFirstName: name,
+        studentLastName: surname,
+        startTime: new Date().toISOString(),
+        isCompleted: false,
+        studentAuthUid: auth.currentUser?.uid || 'anon', // Best effort
       };
-      db.saveAttempt(newAttempt);
-    }
 
-    router.push(`/exam/${code}`);
+      await setDoc(attemptRef, newAttempt);
+
+      // 4. Mark code as used
+      await setDoc(codeDoc.ref, { 
+        isUsedForEntry: true, 
+        studentAttemptId: attemptId 
+      }, { merge: true });
+
+      toast({ title: 'Uğurlu', description: 'İmtahan başladı!' });
+      router.push(`/exam/${code.toUpperCase()}?attemptId=${attemptId}`);
+      
+    } catch (error: any) {
+      console.error(error);
+      toast({ title: 'Sistem xətası', description: 'Firestore ilə əlaqə qurula bilmədi. İndeks yoxlanılmalıdır.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,7 +108,7 @@ export default function StudentEntry() {
               Giriş
             </CardTitle>
             <CardDescription>
-              İmtahana başlamaq üçün sizə təqdim olunan kodu və məlumatlarınızı daxil edin.
+              Bazadakı aktiv kodunuzu və məlumatlarınızı daxil edin.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -118,7 +150,12 @@ export default function StudentEntry() {
               onClick={handleEnter}
               disabled={isLoading}
             >
-              {isLoading ? 'Giriş edilir...' : 'İmtahana başla'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Yoxlanılır...
+                </>
+              ) : 'İmtahana başla'}
             </Button>
           </CardContent>
         </Card>
@@ -127,7 +164,7 @@ export default function StudentEntry() {
           <p className="text-muted-foreground">
             İmtahan kodunuz yoxdur? {' '}
             <button 
-              onClick={() => window.open('https://wa.me/994514262676?text=Imtahan%20üçün%20bilet%20almaq%20istəyirəm', '_blank')}
+              onClick={() => window.open('https://wa.me/994514262676', '_blank')}
               className="text-primary font-semibold hover:underline"
             >
               Buradan əldə edin

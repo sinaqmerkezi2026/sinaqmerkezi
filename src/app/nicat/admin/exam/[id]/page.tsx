@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -8,37 +9,67 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { db, Exam, Question, QuestionType } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 import { Save, Plus, Trash2, ArrowLeft, Key, ImageIcon, Copy, Check, Hash } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
+type QuestionType = 'mcq' | 'open' | 'explanation';
+
+interface Question {
+  id: string;
+  type: QuestionType;
+  text: string;
+  image?: string;
+  options?: string[];
+  correctAnswer: string;
+  explanationCriterion?: string;
+}
+
+interface Exam {
+  id: string;
+  name: string;
+  activeStartDate: string;
+  activeEndDate: string;
+  durationMinutes: number;
+  price: number;
+  codes: string[];
+  questions: Question[];
+}
 
 export default function ExamEditor() {
   const { id } = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
   
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [exam, setExam] = useState<Partial<Exam>>({
+  const [examState, setExamState] = useState<Partial<Exam>>({
     id: id as string,
     name: '',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 31536000000).toISOString().split('T')[0],
+    activeStartDate: new Date().toISOString().split('T')[0],
+    activeEndDate: new Date(Date.now() + 31536000000).toISOString().split('T')[0],
     durationMinutes: 60,
     price: 1,
     codes: [],
     questions: []
   });
 
+  const examRef = useMemoFirebase(() => doc(firestore, 'exams', id as string), [firestore, id]);
+  const { data: existingExam } = useDoc(examRef);
+
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') !== 'true') {
       router.push('/nicat/admin/login');
       return;
     }
-    const existing = db.getExamById(id as string);
-    if (existing) setExam(existing);
-  }, [id, router]);
+    if (existingExam) {
+      setExamState(existingExam);
+    }
+  }, [existingExam, router]);
 
   const addQuestion = () => {
     const q: Question = {
@@ -48,15 +79,15 @@ export default function ExamEditor() {
       options: ['', '', '', ''],
       correctAnswer: '',
     };
-    setExam(prev => ({ ...prev, questions: [...(prev.questions || []), q] }));
+    setExamState(prev => ({ ...prev, questions: [...(prev.questions || []), q] }));
   };
 
   const removeQuestion = (qId: string) => {
-    setExam(prev => ({ ...prev, questions: prev.questions?.filter(q => q.id !== qId) }));
+    setExamState(prev => ({ ...prev, questions: prev.questions?.filter(q => q.id !== qId) }));
   };
 
   const updateQuestion = (qId: string, updates: Partial<Question>) => {
-    setExam(prev => ({
+    setExamState(prev => ({
       ...prev,
       questions: prev.questions?.map(q => q.id === qId ? { ...q, ...updates } : q)
     }));
@@ -66,7 +97,7 @@ export default function ExamEditor() {
     const codes = Array.from({ length: 100 }, () => 
       Math.random().toString(36).substr(2, 6).toUpperCase()
     );
-    setExam(prev => ({ ...prev, codes }));
+    setExamState(prev => ({ ...prev, codes }));
     toast({ title: 'Uğurlu', description: '100 ədəd unikal kod yaradıldı.' });
   };
 
@@ -78,12 +109,27 @@ export default function ExamEditor() {
   };
 
   const handleSave = () => {
-    if (!exam.name || (exam.codes?.length || 0) === 0) {
+    if (!examState.name || (examState.codes?.length || 0) === 0) {
       toast({ title: 'Xəta', description: 'İmtahan adı və kodlar mütləqdir.', variant: 'destructive' });
       return;
     }
-    db.saveExam(exam as Exam);
-    toast({ title: 'Uğurlu', description: 'İmtahan yadda saxlanıldı.' });
+
+    // Save exam to Firestore
+    setDocumentNonBlocking(examRef, examState, { merge: true });
+
+    // Save codes to Firestore subcollection
+    examState.codes?.forEach(code => {
+      const codeRef = doc(firestore, 'exams', id as string, 'accessCodes', code);
+      setDocumentNonBlocking(codeRef, {
+        id: code,
+        code: code,
+        examId: id as string,
+        isUsedForEntry: false,
+        studentAttemptId: null
+      }, { merge: true });
+    });
+
+    toast({ title: 'Uğurlu', description: 'İmtahan və kodlar bazaya yazıldı.' });
     router.push('/nicat/admin/dashboard');
   };
 
@@ -118,37 +164,37 @@ export default function ExamEditor() {
               <CardContent className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2 space-y-2">
                   <Label>İmtahan Adı</Label>
-                  <Input value={exam.name} onChange={e => setExam(p => ({ ...p, name: e.target.value }))} placeholder="Məs: Riyaziyyat - Blok İmtahanı" />
+                  <Input value={examState.name} onChange={e => setExamState(p => ({ ...p, name: e.target.value }))} placeholder="Məs: Riyaziyyat - Blok İmtahanı" />
                 </div>
                 <div className="space-y-2">
                   <Label>Başlanğıc Tarixi</Label>
-                  <Input type="date" value={exam.startDate} onChange={e => setExam(p => ({ ...p, startDate: e.target.value }))} />
+                  <Input type="date" value={examState.activeStartDate} onChange={e => setExamState(p => ({ ...p, activeStartDate: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Bitmə Tarixi</Label>
-                  <Input type="date" value={exam.endDate} onChange={e => setExam(p => ({ ...p, endDate: e.target.value }))} />
+                  <Input type="date" value={examState.activeEndDate} onChange={e => setExamState(p => ({ ...p, activeEndDate: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Müddət (dəqiqə)</Label>
-                  <Input type="number" value={exam.durationMinutes} onChange={e => setExam(p => ({ ...p, durationMinutes: parseInt(e.target.value) }))} />
+                  <Input type="number" value={examState.durationMinutes} onChange={e => setExamState(p => ({ ...p, durationMinutes: parseInt(e.target.value) }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Qiymət (AZN)</Label>
-                  <Input type="number" step="0.1" value={exam.price} onChange={e => setExam(p => ({ ...p, price: parseFloat(e.target.value) }))} />
+                  <Input type="number" step="0.1" value={examState.price} onChange={e => setExamState(p => ({ ...p, price: parseFloat(e.target.value) }))} />
                 </div>
               </CardContent>
             </Card>
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-bold">Suallar ({exam.questions?.length})</h2>
+                <h2 className="text-lg font-bold">Suallar ({examState.questions?.length})</h2>
                 <Button size="sm" onClick={addQuestion}>
                   <Plus className="w-4 h-4 mr-2" />
                   Sual əlavə et
                 </Button>
               </div>
 
-              {exam.questions?.map((q, idx) => (
+              {examState.questions?.map((q, idx) => (
                 <Card key={q.id} className="relative group">
                   <CardContent className="pt-6 space-y-4">
                     <div className="flex justify-between items-start gap-4">
@@ -229,7 +275,7 @@ export default function ExamEditor() {
                             />
                             <Label className="text-xs text-muted-foreground">İzah meyarı (AI bu mətni əsas götürəcək)</Label>
                             <Textarea 
-                              placeholder="Meyar: Məsələn, 'Həll yolunda diskriminant düsturundan istifadə edilməli və x1, x2 kökləri tapılmalıdır...'" 
+                              placeholder="Meyar..." 
                               value={q.explanationCriterion}
                               onChange={e => updateQuestion(q.id, { explanationCriterion: e.target.value })}
                             />
@@ -254,7 +300,7 @@ export default function ExamEditor() {
                     <Hash className="w-5 h-5 text-primary" />
                     <CardTitle className="text-lg">Giriş Kodları</CardTitle>
                   </div>
-                  <Badge variant="secondary">{exam.codes?.length || 0}</Badge>
+                  <Badge variant="secondary">{examState.codes?.length || 0}</Badge>
                 </div>
                 <CardDescription>
                   Tələbələrin imtahana daxil olması üçün 100 ədəd unikal kod.
@@ -262,9 +308,9 @@ export default function ExamEditor() {
               </CardHeader>
               <CardContent className="p-0">
                 <ScrollArea className="h-[500px] p-4">
-                  {exam.codes && exam.codes.length > 0 ? (
+                  {examState.codes && examState.codes.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2">
-                      {exam.codes.map((code, idx) => (
+                      {examState.codes.map((code, idx) => (
                         <div 
                           key={idx} 
                           className="flex items-center justify-between p-2 rounded-lg bg-white border hover:border-primary/30 transition-all group"
@@ -286,7 +332,7 @@ export default function ExamEditor() {
                       <div className="bg-slate-100 p-4 rounded-full">
                         <Key className="w-8 h-8 text-slate-400" />
                       </div>
-                      <p className="text-sm text-slate-500">Hələ heç bir kod yaradılmayıb. Yuxarıdakı düymə ilə kodları yaradın.</p>
+                      <p className="text-sm text-slate-500">Hələ heç bir kod yaradılmayıb.</p>
                       <Button variant="outline" size="sm" onClick={generateCodes}>
                         Kodları indi yarat
                       </Button>
@@ -294,13 +340,6 @@ export default function ExamEditor() {
                   )}
                 </ScrollArea>
               </CardContent>
-              {exam.codes && exam.codes.length > 0 && (
-                <div className="p-4 border-t bg-slate-50 rounded-b-lg">
-                  <Button variant="outline" className="w-full text-xs" onClick={generateCodes}>
-                    Kodları Yenidən Yarat
-                  </Button>
-                </div>
-              )}
             </Card>
           </div>
         </div>

@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -14,7 +15,7 @@ service cloud.firestore {
 
     // --- TEST RULES ---
     match /test_messages/{id} {
-      allow create: if true; // Test üçün hər kəsə icazə veririk
+      allow create: if true;
       allow read: if isAdmin();
     }
 
@@ -27,15 +28,16 @@ service cloud.firestore {
     }
 
     match /exams/{examId} {
-      allow get, list: if isAdmin();
+      allow get: if true; // Allow students to read exam details if they have the ID
+      allow list: if isAdmin();
       allow create, update, delete: if isAdmin();
 
       match /questions/{questionId} {
-        allow get, list: if isAdmin();
+        allow get, list: if isSignedIn(); // Students need to read questions
         allow create, update, delete: if isAdmin();
 
         match /multipleChoiceOptions/{optionId} {
-          allow get, list: if isAdmin();
+          allow get, list: if isSignedIn();
           allow create, update, delete: if isAdmin();
         }
         
@@ -52,35 +54,27 @@ service cloud.firestore {
 
       match /accessCodes/{accessCodeId} {
         allow get: if isSignedIn();
+        // Allow list via collection group for code lookup
+        allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 1);
         allow update: if isSignedIn() && resource.data.isUsedForEntry == false;
-        allow list, create, delete: if isAdmin();
+        allow create, delete: if isAdmin();
       }
     }
 
     match /studentAttempts/{studentAttemptId} {
       function isStudentOwner(data) {
-        return isSignedIn() && data.studentAuthUid == request.auth.uid;
+        return isSignedIn() && (data.studentAuthUid == request.auth.uid || data.studentAuthUid == 'anon');
       }
       
       allow get, list: if isAdmin() || isStudentOwner(resource.data);
-      allow create: if isSignedIn() && request.resource.data.studentAuthUid == request.auth.uid;
-      allow update: if isAdmin() || (isStudentOwner(resource.data) && request.resource.data.studentAuthUid == resource.data.studentAuthUid);
+      allow create: if isSignedIn();
+      allow update: if isAdmin() || isStudentOwner(resource.data);
       allow delete: if isAdmin();
 
-      match /questions/{questionId} {
-        allow get, list: if isAdmin() || isStudentOwner(get(/databases/$(database)/documents/studentAttempts/$(studentAttemptId)).data);
-        allow create, update, delete: if isAdmin();
-
-        match /multipleChoiceOptions/{optionId} {
-          allow get, list: if isAdmin() || isStudentOwner(get(/databases/$(database)/documents/studentAttempts/$(studentAttemptId)).data);
-          allow create, update, delete: if isAdmin();
-        }
-      }
-
       match /studentAnswers/{studentAnswerId} {
-        allow get, list: if isAdmin() || isStudentOwner(resource.data);
-        allow create: if isSignedIn() && request.resource.data.studentAuthUid == request.auth.uid;
-        allow update: if isAdmin() || (isStudentOwner(resource.data) && request.resource.data.studentAuthUid == resource.data.studentAuthUid);
+        allow get, list: if isAdmin() || isSignedIn();
+        allow create: if isSignedIn();
+        allow update: if isAdmin() || isSignedIn();
         allow delete: if isAdmin();
       }
     }

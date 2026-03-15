@@ -1,29 +1,34 @@
+
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Plus, Calendar, Clock, DollarSign, ListChecks, Edit, LayoutDashboard, Database } from 'lucide-react';
-import { db, Exam } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
-import { useFirestore } from '@/firebase';
-import { collection, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminDashboard() {
-  const [exams, setExams] = useState<Exam[]>([]);
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  const examsQuery = useMemoFirebase(() => {
+    return query(collection(firestore, 'exams'), orderBy('name'));
+  }, [firestore]);
+
+  const { data: exams, isLoading } = useCollection(examsQuery);
 
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') !== 'true') {
       router.push('/nicat/admin/login');
       return;
     }
-    setExams(db.getExams());
   }, [router]);
 
   const createNewExam = () => {
@@ -41,7 +46,7 @@ export default function AdminDashboard() {
     
     toast({
       title: "Məlumat göndərildi",
-      description: "Firebase Firestore-a 'hello' mesajı göndərildi. Konsoldan yoxlaya bilərsiniz.",
+      description: "Firebase Firestore-a 'hello' mesajı göndərildi.",
     });
   };
 
@@ -55,7 +60,7 @@ export default function AdminDashboard() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={testDatabaseConnection} className="border-primary text-primary hover:bg-primary/5">
             <Database className="w-4 h-4 mr-2" />
-            DB Test (Hello)
+            DB Test
           </Button>
           <Button onClick={createNewExam} className="bg-primary hover:bg-primary/90 shadow-md">
             <Plus className="w-4 h-4 mr-2" />
@@ -65,15 +70,19 @@ export default function AdminDashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {exams.length === 0 ? (
-            <Card className="col-span-full border-dashed border-2 py-20 flex flex-col items-center justify-center text-slate-400">
-              <Plus className="w-12 h-12 mb-4 opacity-20" />
-              <p className="text-lg">Hələ heç bir imtahan yaradılmayıb</p>
-              <Button variant="link" onClick={createNewExam}>İlk imtahanı yarat</Button>
-            </Card>
-          ) : (
-            exams.map((exam) => (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-64 w-full rounded-xl" />)}
+          </div>
+        ) : !exams || exams.length === 0 ? (
+          <Card className="border-dashed border-2 py-20 flex flex-col items-center justify-center text-slate-400">
+            <Plus className="w-12 h-12 mb-4 opacity-20" />
+            <p className="text-lg">Hələ heç bir imtahan yaradılmayıb</p>
+            <Button variant="link" onClick={createNewExam}>İlk imtahanı yarat</Button>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {exams.map((exam: any) => (
               <Card key={exam.id} className="group hover:shadow-lg transition-all border-none bg-white">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
@@ -81,14 +90,14 @@ export default function AdminDashboard() {
                       {exam.name}
                     </CardTitle>
                     <Badge variant="outline" className="font-mono">
-                      {exam.codes.length} kod
+                      Aktiv
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 pt-4">
                   <div className="flex items-center text-sm text-slate-500 gap-2">
                     <Calendar className="w-4 h-4" />
-                    <span>{new Date(exam.startDate).toLocaleDateString()} - {new Date(exam.endDate).toLocaleDateString()}</span>
+                    <span>{new Date(exam.activeStartDate).toLocaleDateString()} - {new Date(exam.activeEndDate).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center text-sm text-slate-500 gap-2">
                     <Clock className="w-4 h-4" />
@@ -96,11 +105,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex items-center text-sm font-medium text-primary gap-2">
                     <DollarSign className="w-4 h-4" />
-                    <span>{exam.price.toFixed(2)} AZN</span>
-                  </div>
-                  <div className="flex items-center text-sm text-slate-500 gap-2">
-                    <ListChecks className="w-4 h-4" />
-                    <span>{exam.questions.length} sual</span>
+                    <span>{exam.price?.toFixed(2)} AZN</span>
                   </div>
                 </CardContent>
                 <CardFooter className="pt-4 border-t">
@@ -114,9 +119,9 @@ export default function AdminDashboard() {
                   </Button>
                 </CardFooter>
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
