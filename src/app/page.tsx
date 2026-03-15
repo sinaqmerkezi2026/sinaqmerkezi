@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, GraduationCap, Ticket, Loader2 } from 'lucide-react';
+import { LogIn, GraduationCap, Ticket, Loader2, Sparkles } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
@@ -35,7 +35,6 @@ export default function StudentEntry() {
     setIsLoading(true);
 
     try {
-      // Lookup code directly from the flat accessCodes collection using the code as Document ID
       const codeRef = doc(firestore, 'accessCodes', cleanCode);
       const codeSnap = await getDoc(codeRef);
 
@@ -47,7 +46,6 @@ export default function StudentEntry() {
 
       const codeData = codeSnap.data();
 
-      // If already used, go straight to results
       if (codeData.isUsedForEntry) {
         toast({ title: 'Məlumat', description: 'Bu kod artıq istifadə edilib. Nəticələrə yönləndirilirsiniz...' });
         router.push(`/results/${cleanCode}`);
@@ -68,10 +66,8 @@ export default function StudentEntry() {
         answers: {}
       };
 
-      // Create student attempt document
       await setDoc(attemptRef, newAttempt);
 
-      // Mark code as used and link to attempt
       await updateDoc(codeRef, { 
         isUsedForEntry: true, 
         studentAttemptId: attemptId 
@@ -89,76 +85,93 @@ export default function StudentEntry() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4">
-            <GraduationCap className="w-10 h-10 text-primary" />
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[100px]" />
+
+      <div className="w-full max-w-md space-y-8 relative z-10">
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center justify-center p-4 bg-white shadow-xl rounded-3xl mb-2 animate-bounce">
+            <GraduationCap className="w-12 h-12 text-primary" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900">ImtahanFlow</h1>
-          <p className="text-slate-500">Onlayn imtahan platformasına xoş gəlmisiniz</p>
+          <div className="space-y-1">
+            <h1 className="text-5xl font-black tracking-tight text-slate-900 flex items-center justify-center gap-2">
+              Imtahan<span className="text-primary">Flow</span>
+              <Sparkles className="w-6 h-6 text-yellow-500" />
+            </h1>
+            <p className="text-slate-500 font-medium text-lg">Onlayn imtahan platformasına xoş gəlmisiniz</p>
+          </div>
         </div>
 
-        <Card className="border-none shadow-xl bg-white">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold flex items-center gap-2">
-              <LogIn className="w-5 h-5 text-primary" />
-              Giriş
+        <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-sm rounded-[2rem] overflow-hidden">
+          <CardHeader className="pt-8 px-8">
+            <CardTitle className="text-2xl font-bold flex items-center gap-3 text-slate-800">
+              <LogIn className="w-6 h-6 text-primary" />
+              Sessiyaya Giriş
             </CardTitle>
-            <CardDescription>
-              İmtahan kodunuzu və məlumatlarınızı daxil edin.
+            <CardDescription className="text-slate-500 font-medium">
+              İmtahan kodunuzu və şəxsi məlumatlarınızı daxil edin.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6 p-8">
             <div className="space-y-2">
-              <Label htmlFor="code">İmtahan Kodu</Label>
-              <div className="relative">
-                <Ticket className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+              <Label htmlFor="code" className="text-sm font-bold text-slate-600">İmtahan Kodu</Label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Ticket className="h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                </div>
                 <Input 
                   id="code" 
-                  placeholder="Məs: A7B2C9" 
-                  className="pl-10 uppercase font-mono tracking-widest text-lg h-12"
+                  placeholder="MƏS: A7B2C9" 
+                  className="pl-12 uppercase font-mono tracking-[0.3em] text-xl h-14 rounded-2xl border-2 border-slate-100 focus:border-primary focus:ring-primary/20 transition-all bg-slate-50/50"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Ad</Label>
+                <Label htmlFor="name" className="text-sm font-bold text-slate-600">Ad</Label>
                 <Input 
                   id="name" 
                   placeholder="Adınız" 
-                  className="h-11"
+                  className="h-12 rounded-xl border-2 border-slate-100 focus:border-primary bg-slate-50/50"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="surname">Soyad</Label>
+                <Label htmlFor="surname" className="text-sm font-bold text-slate-600">Soyad</Label>
                 <Input 
                   id="surname" 
                   placeholder="Soyadınız" 
-                  className="h-11"
+                  className="h-12 rounded-xl border-2 border-slate-100 focus:border-primary bg-slate-50/50"
                   value={surname}
                   onChange={(e) => setSurname(e.target.value)}
                 />
               </div>
             </div>
+
             <Button 
-              className="w-full h-12 text-lg font-medium shadow-lg transition-all" 
+              className="w-full h-14 text-lg font-bold rounded-2xl shadow-[0_10px_20px_-5px_rgba(var(--primary),0.3)] hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]" 
               onClick={handleEnter}
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Yoxlanılır...
+                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                  Giriş edilir...
                 </>
-              ) : 'İmtahana başla'}
+              ) : 'İmtahana Başla'}
             </Button>
           </CardContent>
         </Card>
+        
+        <p className="text-center text-slate-400 text-sm font-medium">
+          &copy; {new Date().getFullYear()} ImtahanFlow. Bütün hüquqlar qorunur.
+        </p>
       </div>
     </div>
   );

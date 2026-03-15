@@ -5,14 +5,17 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy } from 'lucide-react';
 import { gradeExplanationQuestion } from '@/ai/flows/grade-explanation-question-flow';
 import { useFirestore } from '@/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Results() {
   const { code } = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const firestore = useFirestore();
 
   const [exam, setExam] = useState<any>(null);
@@ -28,7 +31,6 @@ export default function Results() {
       
       setIsLoading(true);
       try {
-        // Find the access code directly by ID
         const codeRef = doc(firestore, 'accessCodes', cleanCode);
         const codeSnap = await getDoc(codeRef);
 
@@ -44,7 +46,6 @@ export default function Results() {
           return;
         }
 
-        // Fetch exam and attempt data concurrently
         const [examDoc, attemptDoc] = await Promise.all([
           getDoc(doc(firestore, 'exams', codeData.examId)),
           getDoc(doc(firestore, 'studentAttempts', codeData.studentAttemptId))
@@ -74,13 +75,12 @@ export default function Results() {
     }
 
     fetchData();
-  }, [code, firestore, router]);
+  }, [code, firestore, router, toast]);
 
   const gradeExplanations = async (e: any, a: any) => {
     setIsGrading(true);
     const feedbacks: Record<string, any> = {};
     
-    // Process only explanation type questions
     const explanationQuestions = (e.questions || []).filter((q: any) => q.type === 'explanation');
     
     for (const q of explanationQuestions) {
@@ -103,7 +103,6 @@ export default function Results() {
     
     setAiFeedbacks(feedbacks);
     
-    // Save AI results back to the attempt document
     try {
       const attemptRef = doc(firestore, 'studentAttempts', a.id);
       await updateDoc(attemptRef, { results: feedbacks });
@@ -117,9 +116,9 @@ export default function Results() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
-          <p className="text-slate-500 font-medium">Nəticələr hazırlanır...</p>
+        <div className="text-center space-y-6">
+          <Loader2 className="w-20 h-20 animate-spin text-primary mx-auto" />
+          <p className="text-slate-500 font-black text-2xl">Nəticələr hazırlanır...</p>
         </div>
       </div>
     );
@@ -141,7 +140,6 @@ export default function Results() {
       if (q.type === 'mcq' || q.type === 'open') {
         if (studentFinal === correctFinal) earnedPoints += 1;
       } else if (q.type === 'explanation') {
-        // For explanation, final answer must be correct to get points from AI score
         const isFinalCorrect = studentFinal === correctFinal;
         const aiResult = aiFeedbacks[q.id];
         if (isFinalCorrect && aiResult) earnedPoints += aiResult.score;
@@ -154,106 +152,163 @@ export default function Results() {
   const totalScore = calculateTotalScore();
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-[#f8fafc] p-6 font-body">
+      <div className="max-w-5xl mx-auto space-y-12">
         <header className="flex justify-between items-center">
-          <Button variant="ghost" onClick={() => router.push('/')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+          <Button variant="ghost" onClick={() => router.push('/')} className="rounded-xl font-bold hover:bg-white shadow-sm border border-transparent hover:border-slate-100">
+            <ArrowLeft className="w-5 h-5 mr-2" />
             Ana Səhifə
           </Button>
-          <Button variant="outline">
-            <Share2 className="w-4 h-4 mr-2" />
-            Nəticəni paylaş
+          <Button variant="outline" className="rounded-xl font-bold bg-white shadow-sm border-slate-100">
+            <Share2 className="w-5 h-5 mr-2" />
+            Paylaş
           </Button>
         </header>
 
-        <Card className="border-none shadow-2xl bg-gradient-to-br from-primary to-primary/80 text-white text-center py-12 px-6 overflow-hidden relative">
-          <div className="relative z-10">
-            <div className="mx-auto bg-white/20 p-5 rounded-full w-fit mb-6">
-              <Award className="w-16 h-16" />
-            </div>
-            <CardTitle className="text-4xl font-bold mb-2">İmtahan Tamamlandı!</CardTitle>
-            <CardDescription className="text-primary-foreground/90 text-lg mb-8">
-              {attempt.studentFirstName} {attempt.studentLastName}, sizin nəticəniz hazırdır.
-            </CardDescription>
-            <div>
-              <div className="text-8xl font-black mb-2">{Math.round(totalScore)}%</div>
-              <div className="text-sm uppercase tracking-[0.2em] opacity-80 font-bold">Ümumi Bal</div>
-            </div>
+        {/* Hero Result Section */}
+        <Card className="border-none shadow-[0_30px_60px_-15px_rgba(var(--primary),0.2)] bg-gradient-to-br from-primary via-primary/90 to-blue-700 text-white rounded-[3rem] overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12">
+            <Trophy className="w-64 h-64" />
           </div>
-          {/* Decorative background circle */}
-          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+          <CardContent className="relative z-10 py-20 flex flex-col items-center">
+            <div className="bg-white/20 p-8 rounded-[2rem] backdrop-blur-md mb-8 shadow-2xl animate-pulse">
+              <Award className="w-20 h-20 text-white" />
+            </div>
+            <CardTitle className="text-5xl font-black mb-4 drop-shadow-md">İmtahan Bitdi!</CardTitle>
+            <CardDescription className="text-white/80 text-xl font-medium mb-10 max-w-lg text-center leading-relaxed">
+              Təbriklər <span className="text-white font-black">{attempt.studentFirstName} {attempt.studentLastName}</span>, zəhmətiniz AI tərəfindən ballandırıldı.
+            </CardDescription>
+            
+            <div className="flex flex-col items-center">
+              <div className="relative group">
+                <div className="absolute -inset-4 bg-white/20 rounded-full blur-2xl group-hover:bg-white/30 transition-all"></div>
+                <div className="relative text-[10rem] font-black leading-none flex items-start">
+                  {Math.round(totalScore)}
+                  <span className="text-4xl font-bold mt-10 opacity-60">%</span>
+                </div>
+              </div>
+              <div className="mt-4 text-sm uppercase tracking-[0.5em] font-black bg-white/10 px-8 py-2 rounded-full border border-white/20">
+                Ümumi Göstərici
+              </div>
+            </div>
+          </CardContent>
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="p-6 border-none shadow-sm">
-            <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-6">Sual Statistikası</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Question Breakdown */}
+          <div className="lg:col-span-5 space-y-6">
+            <h3 className="text-slate-400 text-sm font-black uppercase tracking-[0.2em] px-2 flex items-center gap-3">
+              <Sparkles className="w-4 h-4" />
+              Sual Analizi
+            </h3>
             <div className="space-y-4">
               {(exam.questions || []).map((q: any, i: number) => {
                 const ans = attempt.answers?.[q.id];
                 const isCorrect = ans?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase();
                 return (
-                  <div key={q.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-                    <div className="flex flex-col">
-                      <span className="text-slate-800 font-semibold">Sual {i + 1}</span>
-                      <span className="text-[10px] text-slate-400 uppercase">{q.type === 'explanation' ? 'İzahlı' : q.type === 'mcq' ? 'Test' : 'Açıq'}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {q.type === 'explanation' ? (
-                        <div className="flex items-center gap-2">
-                          {isCorrect ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
-                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary font-bold rounded">
-                            AI: {aiFeedbacks[q.id]?.score !== undefined ? `${(aiFeedbacks[q.id].score * 100).toFixed(0)}%` : '...'}
-                          </span>
+                  <Card key={q.id} className="border-none shadow-sm rounded-2xl overflow-hidden bg-white hover:shadow-md transition-shadow">
+                    <CardContent className="p-6 flex items-center justify-between">
+                      <div className="flex items-center gap-5">
+                        <div className={cn(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm",
+                          isCorrect ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+                        )}>
+                          {i + 1}
                         </div>
-                      ) : (
-                        isCorrect ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <XCircle className="w-6 h-6 text-red-500" />
-                      )}
-                    </div>
-                  </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-800 font-bold text-lg">Sual {i + 1}</span>
+                          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{q.type === 'explanation' ? 'AI İzahlı' : q.type === 'mcq' ? 'Qapalı' : 'Açıq'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {q.type === 'explanation' ? (
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm px-4 py-1.5 bg-primary/10 text-primary font-black rounded-xl">
+                              AI: {aiFeedbacks[q.id]?.score !== undefined ? `${(aiFeedbacks[q.id].score * 100).toFixed(0)}%` : '...'}
+                            </span>
+                            {isCorrect ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <XCircle className="w-6 h-6 text-red-500" />}
+                          </div>
+                        ) : (
+                          isCorrect ? <CheckCircle2 className="w-8 h-8 text-green-500" /> : <XCircle className="w-8 h-8 text-red-500" />
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
-          </Card>
+          </div>
 
-          <Card className="p-6 border-none shadow-sm">
-            <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-6">AI Qiymətləndirmə (İzahlar)</h3>
-            <div className="space-y-6">
+          {/* AI Feedback Section */}
+          <div className="lg:col-span-7 space-y-6">
+            <h3 className="text-slate-400 text-sm font-black uppercase tracking-[0.2em] px-2 flex items-center gap-3">
+              <BrainCircuit className="w-5 h-5 text-primary" />
+              Süni İntellekt Rəyləri
+            </h3>
+            <div className="space-y-8">
               {isGrading ? (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                  <BrainCircuit className="w-12 h-12 mb-4 animate-pulse text-primary/40" />
-                  <p className="text-sm font-medium">AI sizin izahlarınızı analiz edir...</p>
+                <div className="bg-white rounded-[3rem] p-20 flex flex-col items-center justify-center text-center space-y-6 shadow-sm border border-slate-100">
+                  <div className="relative">
+                    <BrainCircuit className="w-20 h-20 animate-pulse text-primary/30" />
+                    <Loader2 className="w-full h-full absolute inset-0 animate-spin text-primary opacity-20" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-black text-slate-800">Analiz aparılır...</p>
+                    <p className="text-slate-400 font-medium">AI sizin izahlarınızı dərindən araşdırır.</p>
+                  </div>
                 </div>
               ) : (
                 (exam.questions || []).filter((q: any) => q.type === 'explanation').length === 0 ? (
-                  <div className="text-center py-16 text-slate-400 text-sm">İzahlı sual yoxdur.</div>
+                  <div className="bg-white rounded-[2rem] p-16 text-center text-slate-400 font-bold shadow-sm">
+                    Bu imtahanda izahlı sual yoxdur.
+                  </div>
                 ) : (
                   (exam.questions || []).filter((q: any) => q.type === 'explanation').map((q: any) => (
-                    <div key={q.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
-                      <div className="flex justify-between items-start">
-                        <p className="font-bold text-sm text-slate-700 leading-tight pr-4">{q.text.substring(0, 60)}...</p>
-                        <span className="font-bold text-primary bg-white px-2 py-1 rounded shadow-sm text-xs">
-                          {aiFeedbacks[q.id]?.score !== undefined ? (aiFeedbacks[q.id].score * 100).toFixed(0) : 0}%
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] font-bold">
-                        <span className={`px-2 py-0.5 rounded ${attempt.answers?.[q.id]?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          Son Cavab: {attempt.answers?.[q.id]?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase() ? 'Doğru' : 'Yanlış'}
-                        </span>
-                      </div>
-                      <div className="bg-white p-4 rounded-lg border border-slate-100 text-xs leading-relaxed text-slate-600 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2 text-primary font-bold">
-                          <BrainCircuit className="w-4 h-4" />
-                          <span>Süni İntellekt Rəyi:</span>
+                    <Card key={q.id} className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden group">
+                      <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/50">
+                        <div className="flex justify-between items-start gap-6">
+                          <p className="font-black text-xl text-slate-800 leading-tight pr-10">{q.text}</p>
+                          <div className="bg-white px-6 py-3 rounded-2xl shadow-lg border border-primary/10">
+                            <span className="text-2xl font-black text-primary">
+                              {aiFeedbacks[q.id]?.score !== undefined ? (aiFeedbacks[q.id].score * 100).toFixed(0) : 0}%
+                            </span>
+                          </div>
                         </div>
-                        {aiFeedbacks[q.id]?.feedback || 'Bu sual üçün izah yoxlanılmayıb.'}
-                      </div>
-                    </div>
+                        <div className="flex gap-3 mt-4">
+                          <span className={cn(
+                            "px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm",
+                            attempt.answers?.[q.id]?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase() 
+                              ? "bg-green-500 text-white" 
+                              : "bg-red-500 text-white"
+                          )}>
+                            Son Cavab: {attempt.answers?.[q.id]?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase() ? 'Doğru' : 'Yanlış'}
+                          </span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-8 space-y-6">
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">Sizin İzahınız:</h4>
+                          <div className="bg-slate-50/50 p-6 rounded-2xl text-slate-600 leading-relaxed font-medium italic">
+                            "{attempt.answers?.[q.id]?.explanation || 'İzah daxil edilməyib.'}"
+                          </div>
+                        </div>
+                        <div className="bg-primary/5 p-8 rounded-[2rem] border-2 border-primary/5 space-y-4 shadow-inner">
+                          <div className="flex items-center gap-3 text-primary">
+                            <BrainCircuit className="w-6 h-6" />
+                            <h4 className="font-black text-lg">AI-nın Qiymətləndirməsi:</h4>
+                          </div>
+                          <p className="text-slate-700 leading-relaxed font-bold text-lg">
+                            {aiFeedbacks[q.id]?.feedback || 'Yoxlama zamanı xəta baş verdi.'}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))
                 )
               )}
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>
