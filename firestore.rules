@@ -4,82 +4,56 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // --- GLOBAL HELPER FUNCTIONS ---
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    // Auth ləğv edildiyi üçün bütün sorğulara icazə veririk
+    function isAllowed() {
+      return true;
     }
 
     // --- TEST RULES ---
     match /test_messages/{id} {
-      allow create: if true;
-      allow read: if isAdmin();
+      allow read, write: if isAllowed();
     }
 
     // --- COLLECTION RULES ---
 
     match /roles_admin/{adminUid} {
-      allow get: if isSignedIn();
-      allow list: if isAdmin();
-      allow create, update, delete: if false; 
+      allow read, write: if isAllowed();
     }
 
     match /exams/{examId} {
-      // İmtahanların siyahısını və detallarını hamı görə bilsin
-      allow get, list: if true; 
-      allow create, update, delete: if isAdmin() || isSignedIn(); // İnkişaf mərhələsi üçün daxil olanlara icazə veririk
+      allow read, write: if isAllowed();
 
       match /questions/{questionId} {
-        allow get, list: if isSignedIn();
-        allow create, update, delete: if isAdmin() || isSignedIn();
+        allow read, write: if isAllowed();
 
         match /multipleChoiceOptions/{optionId} {
-          allow get, list: if isSignedIn();
-          allow create, update, delete: if isAdmin() || isSignedIn();
+          allow read, write: if isAllowed();
         }
         
         match /openEndedCorrectAnswer/{id} {
-          allow get, list: if isAdmin() || isSignedIn();
-          allow create, update, delete: if isAdmin() || isSignedIn();
+          allow read, write: if isAllowed();
         }
 
         match /explanationQuestionCriteria/{id} {
-          allow get, list: if isAdmin() || isSignedIn();
-          allow create, update, delete: if isAdmin() || isSignedIn();
+          allow read, write: if isAllowed();
         }
       }
 
       match /accessCodes/{accessCodeId} {
-        allow get: if isSignedIn();
-        allow list: if isAdmin() || isSignedIn();
-        allow update: if isSignedIn();
-        allow create, delete: if isAdmin() || isSignedIn();
+        allow read, write: if isAllowed();
       }
     }
 
-    // Collection Group qaydası: Tələbə girişi zamanı kodların axtarılması üçün
+    // Collection Group qaydası
     match /{path=**}/accessCodes/{accessCodeId} {
-      allow read: if isSignedIn() || true;
+      allow read, write: if isAllowed();
     }
 
     match /studentAttempts/{studentAttemptId} {
-      function isStudentOwner(data) {
-        return isSignedIn() && (data.studentAuthUid == request.auth.uid || data.studentAuthUid == 'anon');
-      }
-      
-      allow get, list: if isAdmin() || isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isAdmin() || isSignedIn();
-      allow delete: if isAdmin() || isSignedIn();
+      allow read, write: if isAllowed();
 
       match /studentAnswers/{studentAnswerId} {
-        allow get, list: if isAdmin() || isSignedIn();
-        allow create: if isSignedIn();
-        allow update: if isAdmin() || isSignedIn();
-        allow delete: if isAdmin() || isSignedIn();
+        allow read, write: if isAllowed();
       }
     }
   }

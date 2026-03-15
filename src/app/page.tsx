@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, GraduationCap, Ticket, Loader2 } from 'lucide-react';
-import { useFirestore, useAuth, initiateAnonymousSignIn } from '@/firebase';
-import { collectionGroup, query, where, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collectionGroup, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 
 export default function StudentEntry() {
   const [code, setCode] = useState('');
@@ -21,7 +21,6 @@ export default function StudentEntry() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
-  const auth = useAuth();
 
   const handleEnter = async () => {
     if (!code || !name || !surname) {
@@ -32,11 +31,6 @@ export default function StudentEntry() {
     setIsLoading(true);
 
     try {
-      // 1. Sign in anonymously
-      initiateAnonymousSignIn(auth);
-
-      // 2. Search for the access code across all exams
-      // Note: This requires a Collection Group Index in Firestore for 'accessCodes'
       const codesRef = collectionGroup(firestore, 'accessCodes');
       const q = query(codesRef, where('code', '==', code.toUpperCase()));
       const querySnapshot = await getDocs(q);
@@ -51,12 +45,10 @@ export default function StudentEntry() {
       const codeData = codeDoc.data();
 
       if (codeData.isUsedForEntry) {
-        // If used, redirect to results (if the student matches or logic permits)
         router.push(`/results/${code.toUpperCase()}`);
         return;
       }
 
-      // 3. Create a new StudentAttempt
       const attemptId = Math.random().toString(36).substr(2, 9);
       const attemptRef = doc(firestore, 'studentAttempts', attemptId);
       
@@ -68,12 +60,10 @@ export default function StudentEntry() {
         studentLastName: surname,
         startTime: new Date().toISOString(),
         isCompleted: false,
-        studentAuthUid: auth.currentUser?.uid || 'anon', // Best effort
       };
 
       await setDoc(attemptRef, newAttempt);
 
-      // 4. Mark code as used
       await setDoc(codeDoc.ref, { 
         isUsedForEntry: true, 
         studentAttemptId: attemptId 
@@ -84,7 +74,7 @@ export default function StudentEntry() {
       
     } catch (error: any) {
       console.error(error);
-      toast({ title: 'Sistem xətası', description: 'Firestore ilə əlaqə qurula bilmədi. İndeks yoxlanılmalıdır.', variant: 'destructive' });
+      toast({ title: 'Sistem xətası', description: 'Məlumat bazası ilə əlaqə xətası.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -108,7 +98,7 @@ export default function StudentEntry() {
               Giriş
             </CardTitle>
             <CardDescription>
-              Bazadakı aktiv kodunuzu və məlumatlarınızı daxil edin.
+              İmtahan kodunuzu və məlumatlarınızı daxil edin.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -159,18 +149,6 @@ export default function StudentEntry() {
             </Button>
           </CardContent>
         </Card>
-
-        <div className="text-center text-sm">
-          <p className="text-muted-foreground">
-            İmtahan kodunuz yoxdur? {' '}
-            <button 
-              onClick={() => window.open('https://wa.me/994514262676', '_blank')}
-              className="text-primary font-semibold hover:underline"
-            >
-              Buradan əldə edin
-            </button>
-          </p>
-        </div>
       </div>
     </div>
   );
