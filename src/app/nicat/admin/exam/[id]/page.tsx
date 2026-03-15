@@ -90,7 +90,7 @@ export default function ExamEditor() {
           <Button variant="outline" onClick={generateCodes} className="hidden sm:flex">
             <Key className="w-4 h-4 mr-2" />
             Kodları Yenilə (100)
-          </Badge>
+          </Button>
           <Button onClick={handleSave}>
             <Save className="w-4 h-4 mr-2" />
             Yadda saxla
