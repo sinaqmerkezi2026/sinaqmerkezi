@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -99,9 +100,10 @@ export default function StudentEntry() {
   };
 
   const handleBuyByTelegram = (exam: any) => {
-    const telegramUsername = "SinaqMerkeziAdmin"; // Bura Telegram istifadəçi adınızı əlavə edin
+    const telegramNumber = "+994514262676"; 
     const message = `Salam, mən "${exam.name}" imtahanını almaq istəyirəm. Qiymət: ${exam.price} AZN.`;
-    window.open(`https://t.me/${telegramUsername}?text=${encodeURIComponent(message)}`, '_blank');
+    // Telegram-da nömrə ilə müraciət üçün t.me/+nomre formatı istifadə olunur.
+    window.open(`https://t.me/${telegramNumber}`, '_blank');
   };
 
   return (
