@@ -10,11 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Plus, Trash2, ArrowLeft, Key, ImageIcon, Copy, Check, Hash } from 'lucide-react';
+import { Save, Plus, Trash2, ArrowLeft, Key, ImageIcon, Copy, Check, Hash, Ticket, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, collection, query, where } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type QuestionType = 'mcq' | 'open' | 'explanation';
@@ -61,6 +62,16 @@ export default function ExamEditor() {
   const examRef = useMemoFirebase(() => doc(firestore, 'exams', id as string), [firestore, id]);
   const { data: existingExam } = useDoc(examRef);
 
+  // Fetch all access codes for this exam to see usage status
+  const codesQuery = useMemoFirebase(() => 
+    query(collection(firestore, 'accessCodes'), where('examId', '==', id)),
+    [firestore, id]
+  );
+  const { data: dbCodes } = useCollection(codesQuery);
+
+  const availableCodes = (dbCodes || []).filter(c => !c.isUsedForEntry);
+  const usedCodes = (dbCodes || []).filter(c => c.isUsedForEntry);
+
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') !== 'true') {
       router.push('/nicat/admin/login');
@@ -97,8 +108,8 @@ export default function ExamEditor() {
     const codes = Array.from({ length: 100 }, () => 
       Math.random().toString(36).substr(2, 6).toUpperCase()
     );
-    setExamState(prev => ({ ...prev, codes }));
-    toast({ title: 'Uğurlu', description: '100 ədəd unikal kod yaradıldı.' });
+    setExamState(prev => ({ ...prev, codes: [...(prev.codes || []), ...codes] }));
+    toast({ title: 'Uğurlu', description: '100 ədəd yeni unikal kod siyahıya əlavə edildi.' });
   };
 
   const copyToClipboard = (text: string) => {
@@ -124,8 +135,9 @@ export default function ExamEditor() {
         id: code,
         code: code,
         examId: id as string,
-        isUsedForEntry: false,
-        studentAttemptId: null
+        // Don't overwrite isUsedForEntry if it already exists in the DB
+        isUsedForEntry: dbCodes?.find(db => db.code === code)?.isUsedForEntry || false,
+        studentAttemptId: dbCodes?.find(db => db.code === code)?.studentAttemptId || null
       }, { merge: true });
     });
 
@@ -145,7 +157,7 @@ export default function ExamEditor() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={generateCodes} className="hidden sm:flex">
             <Key className="w-4 h-4 mr-2" />
-            Kodları Yenilə (100)
+            Yeni Kodlar Yarat (+100)
           </Button>
           <Button onClick={handleSave}>
             <Save className="w-4 h-4 mr-2" />
@@ -154,7 +166,7 @@ export default function ExamEditor() {
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
+      <div className="max-w-6xl mx-auto p-6 space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <Card>
@@ -187,7 +199,7 @@ export default function ExamEditor() {
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-bold">Suallar ({examState.questions?.length})</h2>
+                <h2 className="text-lg font-bold">Suallar ({examState.questions?.length || 0})</h2>
                 <Button size="sm" onClick={addQuestion}>
                   <Plus className="w-4 h-4 mr-2" />
                   Sual əlavə et
@@ -293,52 +305,93 @@ export default function ExamEditor() {
           </div>
 
           <div className="space-y-6">
-            <Card className="sticky top-24 shadow-md border-primary/10">
+            <Card className="sticky top-24 shadow-md border-primary/10 overflow-hidden">
               <CardHeader className="bg-primary/5 pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Hash className="w-5 h-5 text-primary" />
                     <CardTitle className="text-lg">Giriş Kodları</CardTitle>
                   </div>
-                  <Badge variant="secondary">{examState.codes?.length || 0}</Badge>
+                  <Badge variant="outline" className="bg-white">{examState.codes?.length || 0}</Badge>
                 </div>
-                <CardDescription>
-                  Tələbələrin imtahana daxil olması üçün 100 ədəd unikal kod.
-                </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[500px] p-4">
-                  {examState.codes && examState.codes.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      {examState.codes.map((code, idx) => (
-                        <div 
-                          key={idx} 
-                          className="flex items-center justify-between p-2 rounded-lg bg-white border hover:border-primary/30 transition-all group"
-                        >
-                          <span className="font-mono text-sm font-bold text-slate-700">{code}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => copyToClipboard(code)}
-                          >
-                            {copiedCode === code ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                          </Button>
+                <Tabs defaultValue="available" className="w-full">
+                  <TabsList className="w-full rounded-none h-12 bg-slate-50 border-b">
+                    <TabsTrigger value="available" className="flex-1 gap-2 data-[state=active]:bg-white">
+                      <Ticket className="w-4 h-4" />
+                      Mövcud
+                      <Badge variant="secondary" className="ml-1 px-1.5 py-0 h-5 min-w-5 flex items-center justify-center">
+                        {availableCodes.length}
+                      </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="used" className="flex-1 gap-2 data-[state=active]:bg-white">
+                      <UserCheck className="w-4 h-4" />
+                      İstifadə olunub
+                      <Badge variant="secondary" className="ml-1 px-1.5 py-0 h-5 min-w-5 flex items-center justify-center">
+                        {usedCodes.length}
+                      </Badge>
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="available" className="m-0">
+                    <ScrollArea className="h-[500px] p-4">
+                      {availableCodes.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {availableCodes.map((codeDoc) => (
+                            <div 
+                              key={codeDoc.id} 
+                              className="flex items-center justify-between p-2 rounded-lg bg-white border hover:border-primary/30 transition-all group"
+                            >
+                              <span className="font-mono text-sm font-bold text-slate-700">{codeDoc.code}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => copyToClipboard(codeDoc.code)}
+                              >
+                                {copiedCode === codeDoc.code ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                              </Button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 px-6">
-                      <div className="bg-slate-100 p-4 rounded-full">
-                        <Key className="w-8 h-8 text-slate-400" />
-                      </div>
-                      <p className="text-sm text-slate-500">Hələ heç bir kod yaradılmayıb.</p>
-                      <Button variant="outline" size="sm" onClick={generateCodes}>
-                        Kodları indi yarat
-                      </Button>
-                    </div>
-                  )}
-                </ScrollArea>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 px-6 opacity-40">
+                          <Ticket className="w-12 h-12 text-slate-300" />
+                          <p className="text-sm">Mövcud kod yoxdur.</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
+
+                  <TabsContent value="used" className="m-0">
+                    <ScrollArea className="h-[500px] p-4">
+                      {usedCodes.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-2">
+                          {usedCodes.map((codeDoc) => (
+                            <div 
+                              key={codeDoc.id} 
+                              className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200"
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-mono text-sm font-bold text-slate-400 line-through">{codeDoc.code}</span>
+                                <span className="text-[10px] text-primary font-medium">Sessiya: {codeDoc.studentAttemptId}</span>
+                              </div>
+                              <Badge variant="outline" className="bg-white text-green-600 border-green-200">
+                                İşlənib
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 px-6 opacity-40">
+                          <UserCheck className="w-12 h-12 text-slate-300" />
+                          <p className="text-sm">Hələ heç bir kod istifadə olunmayıb.</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>
