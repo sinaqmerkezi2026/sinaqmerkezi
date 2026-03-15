@@ -4,13 +4,19 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Plus, Calendar, Clock, DollarSign, ListChecks, Edit, LayoutDashboard } from 'lucide-react';
+import { Plus, Calendar, Clock, DollarSign, ListChecks, Edit, LayoutDashboard, Database } from 'lucide-react';
 import { db, Exam } from '@/lib/store';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/badge';
+import { useFirestore } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
   const [exams, setExams] = useState<Exam[]>([]);
   const router = useRouter();
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') !== 'true') {
@@ -25,6 +31,20 @@ export default function AdminDashboard() {
     router.push(`/nicat/admin/exam/${id}`);
   };
 
+  const testDatabaseConnection = () => {
+    const testRef = collection(firestore, 'test_messages');
+    addDocumentNonBlocking(testRef, {
+      message: 'hello',
+      timestamp: serverTimestamp(),
+      sentBy: 'admin'
+    });
+    
+    toast({
+      title: "Məlumat göndərildi",
+      description: "Firebase Firestore-a 'hello' mesajı göndərildi. Konsoldan yoxlaya bilərsiniz.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <nav className="bg-white border-b sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
@@ -32,10 +52,16 @@ export default function AdminDashboard() {
           <LayoutDashboard className="w-6 h-6 text-primary" />
           <h1 className="text-xl font-bold text-slate-800">İdarəetmə Paneli</h1>
         </div>
-        <Button onClick={createNewExam} className="bg-primary hover:bg-primary/90 shadow-md">
-          <Plus className="w-4 h-4 mr-2" />
-          Yeni İmtahan
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={testDatabaseConnection} className="border-primary text-primary hover:bg-primary/5">
+            <Database className="w-4 h-4 mr-2" />
+            DB Test (Hello)
+          </Button>
+          <Button onClick={createNewExam} className="bg-primary hover:bg-primary/90 shadow-md">
+            <Plus className="w-4 h-4 mr-2" />
+            Yeni İmtahan
+          </Button>
+        </div>
       </nav>
 
       <div className="max-w-7xl mx-auto p-6">
