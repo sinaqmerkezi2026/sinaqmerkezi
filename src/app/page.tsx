@@ -100,9 +100,10 @@ export default function StudentEntry() {
   };
 
   const handleBuyByTelegram = (exam: any) => {
-    const telegramNumber = "+994514262676"; 
-    // Telegram birbaşa çat linki nömrə ilə
-    const url = `https://t.me/${telegramNumber}`;
+    // DİQQƏT: Nömrənin görsənməməsi üçün bura öz Telegram Username-inizi yazın (məsələn: SinaqMerkeziAdmin)
+    const telegramUsername = "SinaqMerkeziAdmin"; 
+    const message = encodeURIComponent(`Salam, mən "${exam.name}" imtahanı üçün giriş kodu almaq istəyirəm. Qiymət: ${exam.price} AZN.`);
+    const url = `https://t.me/${telegramUsername}?text=${message}`;
     window.open(url, '_blank');
   };
 
