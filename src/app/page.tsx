@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, MessageCircle } from 'lucide-react';
+import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query } from 'firebase/firestore';
 import {
@@ -98,10 +98,10 @@ export default function StudentEntry() {
     }
   };
 
-  const handleBuyBySms = (exam: any) => {
-    const phoneNumber = "+994500000000"; 
+  const handleBuyByTelegram = (exam: any) => {
+    const telegramUsername = "SinaqMerkeziAdmin"; // Bura Telegram istifadəçi adınızı əlavə edin
     const message = `Salam, mən "${exam.name}" imtahanını almaq istəyirəm. Qiymət: ${exam.price} AZN.`;
-    window.location.href = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+    window.open(`https://t.me/${telegramUsername}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   return (
@@ -112,7 +112,7 @@ export default function StudentEntry() {
       <header className="w-full max-w-6xl flex justify-between items-center z-20">
         <div className="flex items-center gap-2">
           <GraduationCap className="w-8 h-8 text-primary" />
-          <span className="font-black text-xl tracking-tight">Sınaq<span className="text-primary">Mərkəzi</span></span>
+          <span className="font-black text-xl tracking-tight text-foreground">Sınaq<span className="text-primary">Mərkəzi</span></span>
         </div>
         <ThemeToggle />
       </header>
@@ -182,10 +182,10 @@ export default function StudentEntry() {
 
                           <Button 
                             className="w-full h-14 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-3"
-                            onClick={() => handleBuyBySms(exam)}
+                            onClick={() => handleBuyByTelegram(exam)}
                           >
-                            <MessageCircle className="w-6 h-6" />
-                            İndi Al (SMS)
+                            <Send className="w-6 h-6" />
+                            İndi Al (Telegram)
                           </Button>
                         </CardContent>
                       </Card>
