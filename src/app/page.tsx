@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, GraduationCap, Ticket, Loader2 } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { collectionGroup, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export default function StudentEntry() {
   const [code, setCode] = useState('');
@@ -31,18 +31,17 @@ export default function StudentEntry() {
     setIsLoading(true);
 
     try {
-      const codesRef = collectionGroup(firestore, 'accessCodes');
-      const q = query(codesRef, where('code', '==', code.toUpperCase()));
-      const querySnapshot = await getDocs(q);
+      // Lookup code directly from the flat accessCodes collection
+      const codeRef = doc(firestore, 'accessCodes', code.toUpperCase());
+      const codeSnap = await getDoc(codeRef);
 
-      if (querySnapshot.empty) {
+      if (!codeSnap.exists()) {
         toast({ title: 'Xəta', description: 'Daxil etdiyiniz kod yanlışdır.', variant: 'destructive' });
         setIsLoading(false);
         return;
       }
 
-      const codeDoc = querySnapshot.docs[0];
-      const codeData = codeDoc.data();
+      const codeData = codeSnap.data();
 
       if (codeData.isUsedForEntry) {
         router.push(`/results/${code.toUpperCase()}`);
@@ -55,26 +54,28 @@ export default function StudentEntry() {
       const newAttempt = {
         id: attemptId,
         examId: codeData.examId,
-        examAccessCodeId: codeDoc.id,
+        examAccessCode: code.toUpperCase(),
         studentFirstName: name,
         studentLastName: surname,
-        startTime: new Date().toISOString(),
+        startTime: Date.now(),
         isCompleted: false,
+        answers: {}
       };
 
       await setDoc(attemptRef, newAttempt);
 
-      await setDoc(codeDoc.ref, { 
+      // Mark code as used
+      await updateDoc(codeRef, { 
         isUsedForEntry: true, 
         studentAttemptId: attemptId 
-      }, { merge: true });
+      });
 
       toast({ title: 'Uğurlu', description: 'İmtahan başladı!' });
       router.push(`/exam/${code.toUpperCase()}?attemptId=${attemptId}`);
       
     } catch (error: any) {
-      console.error(error);
-      toast({ title: 'Sistem xətası', description: 'Məlumat bazası ilə əlaqə xətası.', variant: 'destructive' });
+      console.error("Entry Error:", error);
+      toast({ title: 'Sistem xətası', description: error.message || 'Məlumat bazası ilə əlaqə xətası.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }

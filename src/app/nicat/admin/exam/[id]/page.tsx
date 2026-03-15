@@ -117,9 +117,9 @@ export default function ExamEditor() {
     // Save exam to Firestore
     setDocumentNonBlocking(examRef, examState, { merge: true });
 
-    // Save codes to Firestore subcollection
+    // Save codes to a flat collection for easier lookup
     examState.codes?.forEach(code => {
-      const codeRef = doc(firestore, 'exams', id as string, 'accessCodes', code);
+      const codeRef = doc(firestore, 'accessCodes', code);
       setDocumentNonBlocking(codeRef, {
         id: code,
         code: code,
