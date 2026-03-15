@@ -1,16 +1,20 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy } from 'lucide-react';
+import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy, MessageSquarePlus, Clock } from 'lucide-react';
 import { gradeExplanationQuestion } from '@/ai/flows/grade-explanation-question-flow';
-import { useFirestore } from '@/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, getDoc, updateDoc, collection, setDoc, query, where } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 
 export default function Results() {
   const { code } = useParams();
@@ -23,6 +27,16 @@ export default function Results() {
   const [aiFeedbacks, setAiFeedbacks] = useState<Record<string, { score: number, feedback: string }>>({});
   const [isGrading, setIsGrading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [appealReason, setAppealReason] = useState("");
+  const [isSubmittingAppeal, setIsSubmittingAppeal] = useState(false);
+
+  // Fetch appeals for this attempt to show status
+  const appealsQuery = useMemoFirebase(() => 
+    attempt?.id ? query(collection(firestore, 'appeals'), where('attemptId', '==', attempt.id)) : null,
+    [firestore, attempt?.id]
+  );
+  const { data: appeals } = useCollection(appealsQuery);
 
   useEffect(() => {
     async function fetchData() {
@@ -118,6 +132,36 @@ export default function Results() {
     setIsGrading(false);
   };
 
+  const handleAppeal = async (questionId: string) => {
+    if (!appealReason.trim()) {
+      toast({ title: 'Xəta', description: 'Zəhmət olmasa səbəbi qeyd edin.', variant: 'destructive' });
+      return;
+    }
+
+    setIsSubmittingAppeal(true);
+    try {
+      const appealId = Math.random().toString(36).substr(2, 9);
+      const appealRef = doc(firestore, 'appeals', appealId);
+      
+      await setDoc(appealRef, {
+        id: appealId,
+        attemptId: attempt.id,
+        questionId,
+        studentName: `${attempt.studentFirstName} ${attempt.studentLastName}`,
+        studentReason: appealReason,
+        status: 'pending',
+        createdAt: Date.now()
+      });
+
+      toast({ title: 'Uğurlu', description: 'Apelyasiya müraciətiniz göndərildi.' });
+      setAppealReason("");
+    } catch (e) {
+      toast({ title: 'Xəta', description: 'Müraciət göndərilmədi.', variant: 'destructive' });
+    } finally {
+      setIsSubmittingAppeal(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -145,7 +189,6 @@ export default function Results() {
       if (q.type === 'mcq' || q.type === 'open') {
         if (studentFinal === correctFinal) earnedPoints += 1;
       } else if (q.type === 'explanation') {
-        // AI score handles both correctness and explanation quality
         const aiResult = aiFeedbacks[q.id];
         if (aiResult) earnedPoints += aiResult.score;
       }
@@ -211,33 +254,97 @@ export default function Results() {
               {(exam.questions || []).map((q: any, i: number) => {
                 const ans = attempt.answers?.[q.id];
                 const isCorrect = ans?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase();
+                const existingAppeal = appeals?.find(a => a.questionId === q.id);
+
                 return (
                   <Card key={q.id} className="border border-border/50 shadow-sm rounded-2xl overflow-hidden bg-card/50 hover:shadow-md transition-shadow">
-                    <CardContent className="p-6 flex items-center justify-between">
-                      <div className="flex items-center gap-5">
-                        <div className={cn(
-                          "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm",
-                          (q.type === 'explanation' ? (aiFeedbacks[q.id]?.score || 0) > 0 : isCorrect) ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-                        )}>
-                          {i + 1}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-foreground font-bold text-lg">Sual {i + 1}</span>
-                          <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{q.type === 'explanation' ? 'AI İzahlı' : q.type === 'mcq' ? 'Qapalı' : 'Açıq'}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        {q.type === 'explanation' ? (
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm px-4 py-1.5 bg-primary/20 text-primary font-black rounded-xl">
-                              AI: {aiFeedbacks[q.id]?.score !== undefined ? `${(aiFeedbacks[q.id].score * 100).toFixed(0)}%` : '...'}
-                            </span>
-                            {isCorrect ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <XCircle className="w-6 h-6 text-orange-500" />}
+                    <CardContent className="p-6 flex flex-col gap-4">
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-5">
+                          <div className={cn(
+                            "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm",
+                            (q.type === 'explanation' ? (aiFeedbacks[q.id]?.score || 0) > 0 : isCorrect) ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                          )}>
+                            {i + 1}
                           </div>
-                        ) : (
-                          isCorrect ? <CheckCircle2 className="w-8 h-8 text-green-500" /> : <XCircle className="w-8 h-8 text-red-500" />
-                        )}
+                          <div className="flex flex-col">
+                            <span className="text-foreground font-bold text-lg">Sual {i + 1}</span>
+                            <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{q.type === 'explanation' ? 'AI İzahlı' : q.type === 'mcq' ? 'Qapalı' : 'Açıq'}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          {q.type === 'explanation' ? (
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm px-4 py-1.5 bg-primary/20 text-primary font-black rounded-xl">
+                                AI: {aiFeedbacks[q.id]?.score !== undefined ? `${(aiFeedbacks[q.id].score * 100).toFixed(0)}%` : '...'}
+                              </span>
+                              {isCorrect ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <XCircle className="w-6 h-6 text-orange-500" />}
+                            </div>
+                          ) : (
+                            isCorrect ? <CheckCircle2 className="w-8 h-8 text-green-500" /> : <XCircle className="w-8 h-8 text-red-500" />
+                          )}
+                        </div>
                       </div>
+
+                      {/* Appeal Section for Open and Explanation Questions */}
+                      {(q.type === 'open' || q.type === 'explanation') && (
+                        <div className="flex justify-end pt-2 border-t border-border/50">
+                          {existingAppeal ? (
+                            <div className="flex items-center gap-2">
+                              <Badge variant={existingAppeal.status === 'approved' ? 'default' : existingAppeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-lg py-1 px-3">
+                                {existingAppeal.status === 'pending' ? 'Apelyasiya gözləmədə' : existingAppeal.status === 'approved' ? 'Təsdiqləndi' : 'Rədd edildi'}
+                              </Badge>
+                              {existingAppeal.adminComment && (
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                                      <Clock className="w-4 h-4 text-muted-foreground" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Admin Rəyi</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="p-4 bg-muted/30 rounded-xl italic">
+                                      "{existingAppeal.adminComment}"
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
+                            </div>
+                          ) : (
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-xs font-black gap-1 h-8 hover:bg-primary/10 hover:text-primary transition-colors">
+                                  <MessageSquarePlus className="w-3 h-3" />
+                                  Apelyasiya ver
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Apelyasiya Müraciəti</DialogTitle>
+                                  <DialogDescription>
+                                    Bu sualın qiymətləndirilməsində səhv olduğunu düşünürsünüzsə, səbəbi ətraflı qeyd edin.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                  <Textarea 
+                                    placeholder="Niyə etiraz edirsiniz? (Məs: Hesablamam düzdür, lakin AI səhv sayıb...)"
+                                    value={appealReason}
+                                    onChange={(e) => setAppealReason(e.target.value)}
+                                    className="min-h-[120px] rounded-xl"
+                                  />
+                                </div>
+                                <DialogFooter>
+                                  <Button onClick={() => handleAppeal(q.id)} disabled={isSubmittingAppeal}>
+                                    {isSubmittingAppeal ? 'Göndərilir...' : 'Müraciət et'}
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );

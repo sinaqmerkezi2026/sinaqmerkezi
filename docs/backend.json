@@ -28,6 +28,21 @@
         "order": { "type": "number" }
       },
       "required": ["id", "examId", "type", "text", "order"]
+    },
+    "Appeal": {
+      "title": "Appeal",
+      "type": "object",
+      "description": "Student appeal for a specific question result.",
+      "properties": {
+        "id": { "type": "string" },
+        "attemptId": { "type": "string" },
+        "questionId": { "type": "string" },
+        "studentReason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "adminComment": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "attemptId", "questionId", "studentReason", "status", "createdAt"]
     }
   },
   "auth": {
@@ -48,6 +63,14 @@
         "definition": {
           "entityName": "StudentAttempt",
           "description": "Student's exam attempt data."
+        }
+      },
+      {
+        "path": "appeals/{appealId}",
+        "definition": {
+          "entityName": "Appeal",
+          "schema": { "$ref": "#/backend/entities/Appeal" },
+          "description": "Student appeals for question results."
         }
       }
     ]
