@@ -23,7 +23,11 @@ export default function StudentEntry() {
   const firestore = useFirestore();
 
   const handleEnter = async () => {
-    if (!code || !name || !surname) {
+    const cleanCode = code.trim().toUpperCase();
+    const cleanName = name.trim();
+    const cleanSurname = surname.trim();
+
+    if (!cleanCode || !cleanName || !cleanSurname) {
       toast({ title: 'Xəta', description: 'Zəhmət olmasa bütün xanaları doldurun.', variant: 'destructive' });
       return;
     }
@@ -31,8 +35,8 @@ export default function StudentEntry() {
     setIsLoading(true);
 
     try {
-      // Lookup code directly from the flat accessCodes collection
-      const codeRef = doc(firestore, 'accessCodes', code.toUpperCase());
+      // Lookup code directly from the flat accessCodes collection using the code as Document ID
+      const codeRef = doc(firestore, 'accessCodes', cleanCode);
       const codeSnap = await getDoc(codeRef);
 
       if (!codeSnap.exists()) {
@@ -43,8 +47,10 @@ export default function StudentEntry() {
 
       const codeData = codeSnap.data();
 
+      // If already used, go straight to results
       if (codeData.isUsedForEntry) {
-        router.push(`/results/${code.toUpperCase()}`);
+        toast({ title: 'Məlumat', description: 'Bu kod artıq istifadə edilib. Nəticələrə yönləndirilirsiniz...' });
+        router.push(`/results/${cleanCode}`);
         return;
       }
 
@@ -54,24 +60,25 @@ export default function StudentEntry() {
       const newAttempt = {
         id: attemptId,
         examId: codeData.examId,
-        examAccessCode: code.toUpperCase(),
-        studentFirstName: name,
-        studentLastName: surname,
+        examAccessCode: cleanCode,
+        studentFirstName: cleanName,
+        studentLastName: cleanSurname,
         startTime: Date.now(),
         isCompleted: false,
         answers: {}
       };
 
+      // Create student attempt document
       await setDoc(attemptRef, newAttempt);
 
-      // Mark code as used
+      // Mark code as used and link to attempt
       await updateDoc(codeRef, { 
         isUsedForEntry: true, 
         studentAttemptId: attemptId 
       });
 
       toast({ title: 'Uğurlu', description: 'İmtahan başladı!' });
-      router.push(`/exam/${code.toUpperCase()}?attemptId=${attemptId}`);
+      router.push(`/exam/${cleanCode}?attemptId=${attemptId}`);
       
     } catch (error: any) {
       console.error("Entry Error:", error);
@@ -82,17 +89,17 @@ export default function StudentEntry() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4">
             <GraduationCap className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">ImtahanFlow</h1>
-          <p className="text-muted-foreground">Onlayn imtahan platformasına xoş gəlmisiniz</p>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">ImtahanFlow</h1>
+          <p className="text-slate-500">Onlayn imtahan platformasına xoş gəlmisiniz</p>
         </div>
 
-        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm">
+        <Card className="border-none shadow-xl bg-white">
           <CardHeader>
             <CardTitle className="text-xl font-semibold flex items-center gap-2">
               <LogIn className="w-5 h-5 text-primary" />
@@ -106,11 +113,11 @@ export default function StudentEntry() {
             <div className="space-y-2">
               <Label htmlFor="code">İmtahan Kodu</Label>
               <div className="relative">
-                <Ticket className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                <Ticket className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
                 <Input 
                   id="code" 
                   placeholder="Məs: A7B2C9" 
-                  className="pl-10 uppercase font-mono tracking-widest"
+                  className="pl-10 uppercase font-mono tracking-widest text-lg h-12"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                 />
@@ -122,6 +129,7 @@ export default function StudentEntry() {
                 <Input 
                   id="name" 
                   placeholder="Adınız" 
+                  className="h-11"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -131,19 +139,20 @@ export default function StudentEntry() {
                 <Input 
                   id="surname" 
                   placeholder="Soyadınız" 
+                  className="h-11"
                   value={surname}
                   onChange={(e) => setSurname(e.target.value)}
                 />
               </div>
             </div>
             <Button 
-              className="w-full h-11 text-lg font-medium shadow-lg hover:shadow-primary/20 transition-all" 
+              className="w-full h-12 text-lg font-medium shadow-lg transition-all" 
               onClick={handleEnter}
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Yoxlanılır...
                 </>
               ) : 'İmtahana başla'}
