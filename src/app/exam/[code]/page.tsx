@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -9,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Timer, ChevronRight, ChevronLeft, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { Timer, ChevronRight, ChevronLeft, Loader2, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
@@ -118,7 +117,7 @@ export default function ExamSession() {
 
   if (!attemptId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <Alert variant="destructive" className="max-w-md shadow-2xl rounded-2xl border-none">
           <AlertCircle className="h-5 w-5" />
           <AlertTitle className="font-bold">Giriş xətası</AlertTitle>
@@ -132,13 +131,13 @@ export default function ExamSession() {
 
   if (isAttemptLoading || !hasCheckedStatus) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-6">
           <div className="relative">
             <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
             <Sparkles className="w-6 h-6 text-primary absolute top-0 right-0 animate-pulse" />
           </div>
-          <p className="text-slate-500 font-bold text-xl">İmtahan sessiyası hazırlanır...</p>
+          <p className="text-muted-foreground font-bold text-xl">İmtahan sessiyası hazırlanır...</p>
         </div>
       </div>
     );
@@ -156,11 +155,11 @@ export default function ExamSession() {
 
   if (!exam || questions.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <div className="text-center space-y-6">
           <AlertCircle className="w-20 h-20 text-red-500 mx-auto opacity-20" />
-          <h2 className="text-3xl font-black text-slate-800">Sual tapılmadı</h2>
-          <p className="text-slate-500 text-lg">Bu imtahanda hələ sual əlavə edilməyib.</p>
+          <h2 className="text-3xl font-black text-foreground">Sual tapılmadı</h2>
+          <p className="text-muted-foreground text-lg">Bu imtahanda hələ sual əlavə edilməyib.</p>
           <Button size="lg" className="rounded-2xl px-12" onClick={() => router.push('/')}>Geri qayıt</Button>
         </div>
       </div>
@@ -168,55 +167,55 @@ export default function ExamSession() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] flex flex-col font-body">
+    <div className="min-h-screen bg-background flex flex-col font-body">
       {/* Dynamic Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+      <header className="bg-card/80 backdrop-blur-md border-b border-border/50 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="bg-primary/10 p-2 rounded-xl">
             <GraduationCap className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="font-black text-xl text-slate-800 hidden md:block">{exam.name}</h1>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{attempt.studentFirstName} {attempt.studentLastName}</p>
+            <h1 className="font-black text-xl text-foreground hidden md:block">{exam.name}</h1>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{attempt.studentFirstName} {attempt.studentLastName}</p>
           </div>
         </div>
 
         <div className={cn(
           "flex items-center gap-3 px-8 py-3 rounded-2xl font-mono text-2xl font-black transition-all duration-500 shadow-inner",
-          timeLeft < 300 ? 'bg-red-50 text-red-600 animate-pulse border-2 border-red-200' : 'bg-slate-100 text-slate-700'
+          timeLeft < 300 ? 'bg-red-500/10 text-red-500 animate-pulse border-2 border-red-500/20' : 'bg-muted/50 text-foreground'
         )}>
-          <Timer className={cn("w-6 h-6", timeLeft < 300 ? "text-red-500" : "text-slate-400")} />
+          <Timer className={cn("w-6 h-6", timeLeft < 300 ? "text-red-500" : "text-muted-foreground")} />
           {formatTime(timeLeft)}
         </div>
 
-        <Button onClick={handleFinish} variant="destructive" className="font-black px-8 h-12 rounded-xl shadow-lg shadow-red-200 hover:shadow-red-300 transition-all">
+        <Button onClick={handleFinish} variant="destructive" className="font-black px-8 h-12 rounded-xl shadow-lg transition-all">
           Bitir
         </Button>
       </header>
 
       <div className="max-w-5xl mx-auto w-full p-6 flex-1 flex flex-col space-y-8">
         {/* Progress Tracker */}
-        <div className="space-y-3 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+        <div className="space-y-3 bg-card/30 p-6 rounded-[2rem] shadow-sm border border-border/50">
           <div className="flex justify-between items-end">
             <div className="space-y-1">
               <span className="text-xs font-black text-primary uppercase tracking-widest">Tərəqqi</span>
-              <h2 className="text-2xl font-black text-slate-800">Sual {currentIdx + 1} <span className="text-slate-400 font-medium">/ {questions.length}</span></h2>
+              <h2 className="text-2xl font-black text-foreground">Sual {currentIdx + 1} <span className="text-muted-foreground font-medium">/ {questions.length}</span></h2>
             </div>
-            <span className="text-xl font-black text-primary bg-primary/5 px-4 py-1 rounded-full">{Math.round(progress)}%</span>
+            <span className="text-xl font-black text-primary bg-primary/10 px-4 py-1 rounded-full">{Math.round(progress)}%</span>
           </div>
-          <Progress value={progress} className="h-4 rounded-full bg-slate-100" />
+          <Progress value={progress} className="h-4 rounded-full bg-muted" />
         </div>
 
         {/* Question Card */}
-        <Card className="shadow-2xl border-none rounded-[2.5rem] overflow-hidden bg-white flex-1 flex flex-col">
-          <CardHeader className="p-10 border-b border-slate-50">
-            <CardTitle className="text-3xl font-black leading-tight text-slate-800">
+        <Card className="shadow-2xl border border-border/50 rounded-[2.5rem] overflow-hidden bg-card/50 backdrop-blur-sm flex-1 flex flex-col">
+          <CardHeader className="p-10 border-b border-border/50">
+            <CardTitle className="text-3xl font-black leading-tight text-foreground">
               {currentQ.text}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-10 space-y-10 flex-1">
             {currentQ.image && (
-              <div className="rounded-[2rem] border-8 border-slate-50 overflow-hidden bg-white shadow-2xl max-w-2xl mx-auto group">
+              <div className="rounded-[2rem] border-8 border-muted/30 overflow-hidden bg-card shadow-2xl max-w-2xl mx-auto group">
                 <img 
                   src={currentQ.image} 
                   alt="Sual şəkli" 
@@ -240,17 +239,17 @@ export default function ExamSession() {
                         className={cn(
                           "flex items-center gap-6 p-6 rounded-3xl border-4 cursor-pointer transition-all duration-300 relative overflow-hidden group",
                           isSelected 
-                            ? "border-primary bg-primary/5 shadow-[0_10px_30px_-5px_rgba(var(--primary),0.2)] scale-[1.02]" 
-                            : "border-slate-50 hover:border-slate-200 hover:bg-slate-50/50"
+                            ? "border-primary bg-primary/10 shadow-xl scale-[1.02]" 
+                            : "border-border/50 hover:border-primary/50 hover:bg-muted/30"
                         )}
                       >
                         <div className={cn(
                           "w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black transition-colors shadow-sm",
-                          isSelected ? "bg-primary text-white" : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                          isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-muted/80"
                         )}>
                           {String.fromCharCode(65 + i)}
                         </div>
-                        <span className="text-xl font-bold text-slate-700 flex-1">{opt}</span>
+                        <span className="text-xl font-bold text-foreground flex-1">{opt}</span>
                         <RadioGroupItem value={opt} className="hidden" />
                       </Label>
                     );
@@ -260,10 +259,10 @@ export default function ExamSession() {
 
               {currentQ.type === 'open' && (
                 <div className="max-w-xl mx-auto space-y-4">
-                  <div className="p-8 bg-slate-50 rounded-[2rem] border-4 border-dashed border-slate-200 space-y-4">
-                    <Label className="text-xl font-black text-slate-700 block text-center">Cavabınızı daxil edin:</Label>
+                  <div className="p-8 bg-muted/20 rounded-[2rem] border-4 border-dashed border-border/50 space-y-4">
+                    <Label className="text-xl font-black text-foreground block text-center">Cavabınızı daxil edin:</Label>
                     <Input 
-                      className="h-20 text-3xl font-black text-center px-6 rounded-2xl border-none shadow-2xl focus:ring-primary bg-white"
+                      className="h-20 text-3xl font-black text-center px-6 rounded-2xl border-none shadow-2xl focus:ring-primary bg-card text-foreground"
                       value={attempt.answers?.[currentQ.id]?.finalAnswer || ''}
                       onChange={(e) => updateAnswer(currentQ.id, e.target.value)}
                       placeholder="..."
@@ -275,12 +274,12 @@ export default function ExamSession() {
               {currentQ.type === 'explanation' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                   <div className="space-y-4">
-                    <Label className="text-xl font-black text-slate-800 flex items-center gap-3">
-                      <span className="bg-primary text-white w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">1</span>
+                    <Label className="text-xl font-black text-foreground flex items-center gap-3">
+                      <span className="bg-primary text-primary-foreground w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">1</span>
                       Ətraflı İzah
                     </Label>
                     <Textarea 
-                      className="min-h-[350px] text-xl leading-relaxed rounded-[2rem] border-4 border-slate-50 p-8 shadow-inner bg-slate-50/50 focus:bg-white focus:border-primary/20 transition-all"
+                      className="min-h-[350px] text-xl leading-relaxed rounded-[2rem] border-4 border-border/20 p-8 shadow-inner bg-muted/20 focus:bg-card focus:border-primary/40 transition-all text-foreground"
                       placeholder="Məsələnin həll yolunu və izahını ətraflı şəkildə bura yazın..."
                       value={attempt.answers?.[currentQ.id]?.explanation || ''}
                       onChange={(e) => updateAnswer(currentQ.id, attempt.answers?.[currentQ.id]?.finalAnswer || '', e.target.value)}
@@ -288,17 +287,17 @@ export default function ExamSession() {
                   </div>
                   <div className="space-y-4">
                     <Label className="text-xl font-black text-primary flex items-center gap-3">
-                      <span className="bg-primary text-white w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">2</span>
+                      <span className="bg-primary text-primary-foreground w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">2</span>
                       Yekun Cavab
                     </Label>
                     <div className="p-10 bg-primary/5 rounded-[2.5rem] border-4 border-primary/10 shadow-inner flex flex-col items-center justify-center space-y-6">
                       <Input 
                         placeholder="Son cavab..."
-                        className="h-20 bg-white text-3xl font-black text-center rounded-[1.5rem] border-none shadow-2xl focus:ring-primary w-full"
+                        className="h-20 bg-card text-3xl font-black text-center rounded-[1.5rem] border-none shadow-2xl focus:ring-primary w-full text-foreground"
                         value={attempt.answers?.[currentQ.id]?.finalAnswer || ''}
                         onChange={(e) => updateAnswer(currentQ.id, e.target.value, attempt.answers?.[currentQ.id]?.explanation)}
                       />
-                      <div className="flex items-center gap-2 text-primary/60 font-bold bg-white/50 px-6 py-2 rounded-full">
+                      <div className="flex items-center gap-2 text-primary font-bold bg-primary/10 px-6 py-2 rounded-full">
                         <Sparkles className="w-5 h-5" />
                         <span className="text-sm">AI tərəfindən ballandırılacaq</span>
                       </div>
@@ -317,13 +316,13 @@ export default function ExamSession() {
             size="lg" 
             disabled={currentIdx === 0}
             onClick={() => setCurrentIdx(p => p - 1)}
-            className="rounded-2xl h-16 px-10 border-2 font-black text-lg bg-white shadow-md hover:bg-slate-50"
+            className="rounded-2xl h-16 px-10 border-2 font-black text-lg bg-card shadow-md hover:bg-muted"
           >
             <ChevronLeft className="w-6 h-6 mr-2" />
             Əvvəlki
           </Button>
 
-          <div className="flex flex-wrap justify-center gap-3 bg-white/50 p-4 rounded-[2rem] backdrop-blur-sm border border-white">
+          <div className="flex flex-wrap justify-center gap-3 bg-card/30 p-4 rounded-[2rem] backdrop-blur-sm border border-border/50">
             {questions.map((_: any, i: number) => {
               const isAnswered = !!attempt.answers?.[questions[i].id]?.finalAnswer;
               const isCurrent = i === currentIdx;
@@ -334,10 +333,10 @@ export default function ExamSession() {
                   className={cn(
                     "w-12 h-12 rounded-2xl text-lg font-black transition-all duration-300 transform",
                     isCurrent 
-                      ? "bg-primary text-white scale-125 shadow-[0_8px_20px_-5px_rgba(var(--primary),0.5)] z-10" 
+                      ? "bg-primary text-primary-foreground scale-125 shadow-xl z-10" 
                       : isAnswered 
                         ? "bg-primary/20 text-primary border-2 border-primary/20" 
-                        : "bg-white border-2 border-slate-200 text-slate-400 hover:border-slate-400"
+                        : "bg-muted border-2 border-border/50 text-muted-foreground hover:border-primary/50"
                   )}
                 >
                   {i + 1}

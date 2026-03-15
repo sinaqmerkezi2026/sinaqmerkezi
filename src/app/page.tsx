@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -85,46 +84,46 @@ export default function StudentEntry() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[100px]" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
 
       <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center p-4 bg-white shadow-xl rounded-3xl mb-2 animate-bounce">
+          <div className="inline-flex items-center justify-center p-4 bg-card shadow-2xl rounded-3xl mb-2 animate-bounce border border-border/50">
             <GraduationCap className="w-12 h-12 text-primary" />
           </div>
           <div className="space-y-1">
-            <h1 className="text-5xl font-black tracking-tight text-slate-900 flex items-center justify-center gap-2">
+            <h1 className="text-5xl font-black tracking-tight text-foreground flex items-center justify-center gap-2">
               Imtahan<span className="text-primary">Flow</span>
               <Sparkles className="w-6 h-6 text-yellow-500" />
             </h1>
-            <p className="text-slate-500 font-medium text-lg">Onlayn imtahan platformasına xoş gəlmisiniz</p>
+            <p className="text-muted-foreground font-medium text-lg">Onlayn imtahan platformasına xoş gəlmisiniz</p>
           </div>
         </div>
 
-        <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-sm rounded-[2rem] overflow-hidden">
+        <Card className="border border-border/50 shadow-2xl bg-card/50 backdrop-blur-xl rounded-[2rem] overflow-hidden">
           <CardHeader className="pt-8 px-8">
-            <CardTitle className="text-2xl font-bold flex items-center gap-3 text-slate-800">
+            <CardTitle className="text-2xl font-bold flex items-center gap-3 text-foreground">
               <LogIn className="w-6 h-6 text-primary" />
               Sessiyaya Giriş
             </CardTitle>
-            <CardDescription className="text-slate-500 font-medium">
+            <CardDescription className="text-muted-foreground font-medium">
               İmtahan kodunuzu və şəxsi məlumatlarınızı daxil edin.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 p-8">
             <div className="space-y-2">
-              <Label htmlFor="code" className="text-sm font-bold text-slate-600">İmtahan Kodu</Label>
+              <Label htmlFor="code" className="text-sm font-bold text-muted-foreground">İmtahan Kodu</Label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Ticket className="h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                  <Ticket className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 </div>
                 <Input 
                   id="code" 
                   placeholder="MƏS: A7B2C9" 
-                  className="pl-12 uppercase font-mono tracking-[0.3em] text-xl h-14 rounded-2xl border-2 border-slate-100 focus:border-primary focus:ring-primary/20 transition-all bg-slate-50/50"
+                  className="pl-12 uppercase font-mono tracking-[0.3em] text-xl h-14 rounded-2xl border-2 border-border/50 focus:border-primary focus:ring-primary/20 transition-all bg-muted/20 text-foreground"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                 />
@@ -133,21 +132,21 @@ export default function StudentEntry() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-bold text-slate-600">Ad</Label>
+                <Label htmlFor="name" className="text-sm font-bold text-muted-foreground">Ad</Label>
                 <Input 
                   id="name" 
                   placeholder="Adınız" 
-                  className="h-12 rounded-xl border-2 border-slate-100 focus:border-primary bg-slate-50/50"
+                  className="h-12 rounded-xl border-2 border-border/50 focus:border-primary bg-muted/20 text-foreground"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="surname" className="text-sm font-bold text-slate-600">Soyad</Label>
+                <Label htmlFor="surname" className="text-sm font-bold text-muted-foreground">Soyad</Label>
                 <Input 
                   id="surname" 
                   placeholder="Soyadınız" 
-                  className="h-12 rounded-xl border-2 border-slate-100 focus:border-primary bg-slate-50/50"
+                  className="h-12 rounded-xl border-2 border-border/50 focus:border-primary bg-muted/20 text-foreground"
                   value={surname}
                   onChange={(e) => setSurname(e.target.value)}
                 />
@@ -155,7 +154,7 @@ export default function StudentEntry() {
             </div>
 
             <Button 
-              className="w-full h-14 text-lg font-bold rounded-2xl shadow-[0_10px_20px_-5px_rgba(var(--primary),0.3)] hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]" 
+              className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]" 
               onClick={handleEnter}
               disabled={isLoading}
             >
@@ -169,7 +168,7 @@ export default function StudentEntry() {
           </CardContent>
         </Card>
         
-        <p className="text-center text-slate-400 text-sm font-medium">
+        <p className="text-center text-muted-foreground/50 text-sm font-medium">
           &copy; {new Date().getFullYear()} ImtahanFlow. Bütün hüquqlar qorunur.
         </p>
       </div>
