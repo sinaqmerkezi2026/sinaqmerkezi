@@ -101,9 +101,9 @@ export default function StudentEntry() {
 
   const handleBuyByTelegram = (exam: any) => {
     const telegramNumber = "+994514262676"; 
-    const message = `Salam, mən "${exam.name}" imtahanını almaq istəyirəm. Qiymət: ${exam.price} AZN.`;
-    // Telegram-da nömrə ilə müraciət üçün t.me/+nomre formatı istifadə olunur.
-    window.open(`https://t.me/${telegramNumber}`, '_blank');
+    // Telegram birbaşa çat linki nömrə ilə
+    const url = `https://t.me/${telegramNumber}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -183,7 +183,7 @@ export default function StudentEntry() {
                           </div>
 
                           <Button 
-                            className="w-full h-14 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-3"
+                            className="w-full h-14 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-3 text-white"
                             onClick={() => handleBuyByTelegram(exam)}
                           >
                             <Send className="w-6 h-6" />
