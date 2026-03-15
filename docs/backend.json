@@ -37,10 +37,13 @@
         "id": { "type": "string" },
         "attemptId": { "type": "string" },
         "questionId": { "type": "string" },
+        "studentName": { "type": "string" },
         "studentReason": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "adminComment": { "type": "string" },
-        "createdAt": { "type": "number" }
+        "awardedScore": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "processedAt": { "type": "number" }
       },
       "required": ["id", "attemptId", "questionId", "studentReason", "status", "createdAt"]
     }

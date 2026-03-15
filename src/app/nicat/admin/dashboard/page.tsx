@@ -5,11 +5,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, Database, MessageSquare, Check, X, Info } from 'lucide-react';
+import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, serverTimestamp, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -49,7 +48,7 @@ export default function AdminDashboard() {
     router.push(`/nicat/admin/exam/${id}`);
   };
 
-  const handleAppealDecision = async (status: 'approved' | 'rejected') => {
+  const handleAppealDecision = async (status: 'approved' | 'rejected', awardedScore?: number) => {
     if (!selectedAppeal) return;
     setIsProcessingAppeal(true);
 
@@ -58,10 +57,11 @@ export default function AdminDashboard() {
       await updateDoc(appealRef, {
         status,
         adminComment,
-        processedAt: Date.now()
+        processedAt: Date.now(),
+        awardedScore: awardedScore || 0
       });
 
-      if (status === 'approved') {
+      if (status === 'approved' && awardedScore !== undefined) {
         // Update the student attempt score
         const attemptRef = doc(firestore, 'studentAttempts', selectedAppeal.attemptId);
         const attemptSnap = await getDoc(attemptRef);
@@ -70,12 +70,11 @@ export default function AdminDashboard() {
           const attemptData = attemptSnap.data();
           const currentResults = attemptData.results || {};
           
-          // Give full points (1.0) for approved appeal
           const updatedResults = {
             ...currentResults,
             [selectedAppeal.questionId]: {
               ...currentResults[selectedAppeal.questionId],
-              score: 1,
+              score: awardedScore,
               feedback: `Apelyasiya təsdiqləndi: ${adminComment}`
             }
           };
@@ -194,7 +193,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-3">
                             <span className="font-black text-slate-800">{appeal.studentName}</span>
                             <Badge variant={appeal.status === 'approved' ? 'default' : appeal.status === 'rejected' ? 'destructive' : 'secondary'}>
-                              {appeal.status === 'pending' ? 'Gözləmədə' : appeal.status === 'approved' ? 'Təsdiqləndi' : 'Rədd edildi'}
+                              {appeal.status === 'pending' ? 'Gözləmədə' : appeal.status === 'approved' ? `Təsdiqləndi (${appeal.awardedScore})` : 'Rədd edildi'}
                             </Badge>
                           </div>
                           <p className="text-sm text-slate-500 max-w-xl line-clamp-1 italic">"{appeal.studentReason}"</p>
@@ -223,7 +222,7 @@ export default function AdminDashboard() {
           <DialogHeader>
             <DialogTitle>Apelyasiya Detalları</DialogTitle>
             <DialogDescription>
-              Tələbənin müraciətini dəyərləndirin.
+              Tələbənin müraciətini dəyərləndirin və müvafiq balı təyin edin.
             </DialogDescription>
           </DialogHeader>
           
@@ -245,22 +244,41 @@ export default function AdminDashboard() {
                     onChange={(e) => setAdminComment(e.target.value)}
                     className="min-h-[100px] rounded-xl"
                   />
-                  <div className="flex gap-4 pt-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2">
                     <Button 
-                      className="flex-1 bg-green-600 hover:bg-green-700" 
-                      onClick={() => handleAppealDecision('approved')}
+                      className="bg-green-600 hover:bg-green-700 font-black h-12" 
+                      onClick={() => handleAppealDecision('approved', 1)}
                       disabled={isProcessingAppeal}
                     >
-                      <Check className="w-4 h-4 mr-2" />
-                      Təsdiqlə (+1 bal)
+                      +1
+                    </Button>
+                    <Button 
+                      className="bg-green-500 hover:bg-green-600 font-black h-12" 
+                      onClick={() => handleAppealDecision('approved', 2/3)}
+                      disabled={isProcessingAppeal}
+                    >
+                      +2/3
+                    </Button>
+                    <Button 
+                      className="bg-green-400 hover:bg-green-500 font-black h-12" 
+                      onClick={() => handleAppealDecision('approved', 1/2)}
+                      disabled={isProcessingAppeal}
+                    >
+                      +1/2
+                    </Button>
+                    <Button 
+                      className="bg-green-300 hover:bg-green-400 font-black h-12 text-slate-800" 
+                      onClick={() => handleAppealDecision('approved', 1/3)}
+                      disabled={isProcessingAppeal}
+                    >
+                      +1/3
                     </Button>
                     <Button 
                       variant="destructive" 
-                      className="flex-1" 
+                      className="font-black h-12" 
                       onClick={() => handleAppealDecision('rejected')}
                       disabled={isProcessingAppeal}
                     >
-                      <X className="w-4 h-4 mr-2" />
                       Rədd et
                     </Button>
                   </div>
@@ -271,6 +289,11 @@ export default function AdminDashboard() {
                   <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl font-bold text-primary">
                     {selectedAppeal.adminComment || "Rəy bildirilməyib."}
                   </div>
+                  {selectedAppeal.status === 'approved' && (
+                    <div className="text-sm font-bold text-green-600 mt-2">
+                      Verilən bal: +{selectedAppeal.awardedScore === 1 ? '1' : selectedAppeal.awardedScore.toFixed(2)}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
