@@ -76,8 +76,8 @@ export default function ExamSession() {
         return prev - 1;
       });
     }, 1000);
-    return () => setInterval(timer);
-  }, [timeLeft, hasCheckedStatus]);
+    return () => clearInterval(timer);
+  }, [hasCheckedStatus]); // timeLeft dependenciesi silindi ki, hər saniyə yeni interval yaranmasın
 
   const updateAnswer = async (qId: string, finalAnswer: string, explanation?: string) => {
     if (!attempt || !attemptRef) return;
