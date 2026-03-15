@@ -15,6 +15,7 @@ import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function ExamSession() {
   const { code } = useParams();
@@ -75,7 +76,7 @@ export default function ExamSession() {
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(timer);
+    return () => setInterval(timer);
   }, [timeLeft, hasCheckedStatus]);
 
   const updateAnswer = async (qId: string, finalAnswer: string, explanation?: string) => {
@@ -168,7 +169,6 @@ export default function ExamSession() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-body">
-      {/* Dynamic Header */}
       <header className="bg-card/80 backdrop-blur-md border-b border-border/50 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="bg-primary/10 p-2 rounded-xl">
@@ -180,21 +180,25 @@ export default function ExamSession() {
           </div>
         </div>
 
-        <div className={cn(
-          "flex items-center gap-3 px-8 py-3 rounded-2xl font-mono text-2xl font-black transition-all duration-500 shadow-inner",
-          timeLeft < 300 ? 'bg-red-500/10 text-red-500 animate-pulse border-2 border-red-500/20' : 'bg-muted/50 text-foreground'
-        )}>
-          <Timer className={cn("w-6 h-6", timeLeft < 300 ? "text-red-500" : "text-muted-foreground")} />
-          {formatTime(timeLeft)}
-        </div>
+        <div className="flex items-center gap-6">
+          <div className={cn(
+            "flex items-center gap-3 px-6 py-2 rounded-2xl font-mono text-xl font-black transition-all duration-500 shadow-inner",
+            timeLeft < 300 ? 'bg-red-500/10 text-red-500 animate-pulse border-2 border-red-500/20' : 'bg-muted/50 text-foreground'
+          )}>
+            <Timer className={cn("w-5 h-5", timeLeft < 300 ? "text-red-500" : "text-muted-foreground")} />
+            {formatTime(timeLeft)}
+          </div>
 
-        <Button onClick={handleFinish} variant="destructive" className="font-black px-8 h-12 rounded-xl shadow-lg transition-all">
-          Bitir
-        </Button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Button onClick={handleFinish} variant="destructive" className="font-black px-6 h-10 rounded-xl shadow-lg transition-all">
+              Bitir
+            </Button>
+          </div>
+        </div>
       </header>
 
       <div className="max-w-5xl mx-auto w-full p-6 flex-1 flex flex-col space-y-8">
-        {/* Progress Tracker */}
         <div className="space-y-3 bg-card/30 p-6 rounded-[2rem] shadow-sm border border-border/50">
           <div className="flex justify-between items-end">
             <div className="space-y-1">
@@ -206,7 +210,6 @@ export default function ExamSession() {
           <Progress value={progress} className="h-4 rounded-full bg-muted" />
         </div>
 
-        {/* Question Card */}
         <Card className="shadow-2xl border border-border/50 rounded-[2.5rem] overflow-hidden bg-card/50 backdrop-blur-sm flex-1 flex flex-col">
           <CardHeader className="p-10 border-b border-border/50">
             <CardTitle className="text-3xl font-black leading-tight text-foreground">
@@ -245,7 +248,7 @@ export default function ExamSession() {
                       >
                         <div className={cn(
                           "w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black transition-colors shadow-sm",
-                          isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-muted/80"
+                          isSelected ? "bg-primary text-white" : "bg-muted text-muted-foreground group-hover:bg-muted/80"
                         )}>
                           {String.fromCharCode(65 + i)}
                         </div>
@@ -275,7 +278,7 @@ export default function ExamSession() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                   <div className="space-y-4">
                     <Label className="text-xl font-black text-foreground flex items-center gap-3">
-                      <span className="bg-primary text-primary-foreground w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">1</span>
+                      <span className="bg-primary text-white w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">1</span>
                       Ətraflı İzah
                     </Label>
                     <Textarea 
@@ -287,7 +290,7 @@ export default function ExamSession() {
                   </div>
                   <div className="space-y-4">
                     <Label className="text-xl font-black text-primary flex items-center gap-3">
-                      <span className="bg-primary text-primary-foreground w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">2</span>
+                      <span className="bg-primary text-white w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">2</span>
                       Yekun Cavab
                     </Label>
                     <div className="p-10 bg-primary/5 rounded-[2.5rem] border-4 border-primary/10 shadow-inner flex flex-col items-center justify-center space-y-6">
@@ -309,7 +312,6 @@ export default function ExamSession() {
           </CardContent>
         </Card>
 
-        {/* Footer Navigation */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 pb-12">
           <Button 
             variant="outline" 
@@ -333,7 +335,7 @@ export default function ExamSession() {
                   className={cn(
                     "w-12 h-12 rounded-2xl text-lg font-black transition-all duration-300 transform",
                     isCurrent 
-                      ? "bg-primary text-primary-foreground scale-125 shadow-xl z-10" 
+                      ? "bg-primary text-white scale-125 shadow-xl z-10" 
                       : isAnswered 
                         ? "bg-primary/20 text-primary border-2 border-primary/20" 
                         : "bg-muted border-2 border-border/50 text-muted-foreground hover:border-primary/50"
@@ -349,7 +351,7 @@ export default function ExamSession() {
             size="lg"
             disabled={currentIdx === questions.length - 1}
             onClick={() => setCurrentIdx(p => p + 1)}
-            className="rounded-2xl h-16 px-10 font-black text-lg shadow-xl hover:translate-x-1 transition-all"
+            className="rounded-2xl h-16 px-10 font-black text-lg shadow-xl hover:translate-x-1 transition-all text-white"
           >
             Növbəti
             <ChevronRight className="w-6 h-6 ml-2" />

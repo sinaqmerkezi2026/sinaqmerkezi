@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, MessageCircle } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, getDoc, setDoc, updateDoc, collection, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, query } from 'firebase/firestore';
 import {
   Carousel,
   CarouselContent,
@@ -18,6 +18,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function StudentEntry() {
   const [code, setCode] = useState('');
@@ -29,7 +30,6 @@ export default function StudentEntry() {
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  // Fetch active exams for the sliding section
   const activeExamsQuery = useMemoFirebase(() => {
     return query(collection(firestore, 'exams'));
   }, [firestore]);
@@ -99,25 +99,32 @@ export default function StudentEntry() {
   };
 
   const handleBuyBySms = (exam: any) => {
-    const phoneNumber = "+994500000000"; // Placeholder admin phone
+    const phoneNumber = "+994500000000"; 
     const message = `Salam, mən "${exam.name}" imtahanını almaq istəyirəm. Qiymət: ${exam.price} AZN.`;
     window.location.href = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center p-6 relative overflow-hidden space-y-12">
-      {/* Decorative Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
 
-      <div className="w-full max-w-6xl mt-12 space-y-16 relative z-10">
+      <header className="w-full max-w-6xl flex justify-between items-center z-20">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="w-8 h-8 text-primary" />
+          <span className="font-black text-xl tracking-tight">Imtahan<span className="text-primary">Flow</span></span>
+        </div>
+        <ThemeToggle />
+      </header>
+
+      <div className="w-full max-w-6xl mt-4 space-y-16 relative z-10">
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center p-4 bg-card shadow-2xl rounded-3xl mb-2 animate-bounce border border-border/50">
             <GraduationCap className="w-12 h-12 text-primary" />
           </div>
           <div className="space-y-1">
             <h1 className="text-5xl font-black tracking-tight text-foreground flex items-center justify-center gap-2">
-              Imtahan<span className="text-primary">Flow</span>
+              Biliyini<span className="text-primary">Yoxla</span>
               <Sparkles className="w-6 h-6 text-yellow-500" />
             </h1>
             <p className="text-muted-foreground font-medium text-lg">Onlayn imtahan platformasına xoş gəlmisiniz</p>
@@ -125,7 +132,6 @@ export default function StudentEntry() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          {/* Active Exams Sliding Section */}
           <div className="space-y-6">
             <div className="flex items-center justify-between px-2">
               <h2 className="text-2xl font-black text-foreground flex items-center gap-2">
@@ -198,7 +204,6 @@ export default function StudentEntry() {
             )}
           </div>
 
-          {/* Student Entry Form */}
           <div className="space-y-6">
             <h2 className="text-2xl font-black text-foreground px-2 flex items-center gap-2">
               <Ticket className="w-5 h-5 text-primary" />
@@ -246,7 +251,7 @@ export default function StudentEntry() {
                 </div>
 
                 <Button 
-                  className="w-full h-14 text-lg font-black rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] bg-primary" 
+                  className="w-full h-14 text-lg font-black rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] bg-primary text-white" 
                   onClick={handleEnter}
                   disabled={isLoading}
                 >

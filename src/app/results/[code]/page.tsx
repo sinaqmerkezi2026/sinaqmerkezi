@@ -10,6 +10,7 @@ import { useFirestore } from '@/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Results() {
   const { code } = useParams();
@@ -158,14 +159,16 @@ export default function Results() {
             <ArrowLeft className="w-5 h-5 mr-2" />
             Ana Səhifə
           </Button>
-          <Button variant="outline" className="rounded-xl font-bold bg-card shadow-sm border-border/50">
-            <Share2 className="w-5 h-5 mr-2" />
-            Paylaş
-          </Button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Button variant="outline" className="rounded-xl font-bold bg-card shadow-sm border-border/50">
+              <Share2 className="w-5 h-5 mr-2" />
+              Paylaş
+            </Button>
+          </div>
         </header>
 
-        {/* Hero Result Section */}
-        <Card className="border-none shadow-2xl bg-gradient-to-br from-primary via-primary/80 to-blue-900 text-foreground rounded-[3rem] overflow-hidden relative">
+        <Card className="border-none shadow-2xl bg-gradient-to-br from-primary via-primary/80 to-blue-900 text-white rounded-[3rem] overflow-hidden relative">
           <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12">
             <Trophy className="w-64 h-64 text-white" />
           </div>
@@ -191,11 +194,9 @@ export default function Results() {
               </div>
             </div>
           </CardContent>
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/5 rounded-full blur-[100px]"></div>
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Question Breakdown */}
           <div className="lg:col-span-5 space-y-6">
             <h3 className="text-muted-foreground text-sm font-black uppercase tracking-[0.2em] px-2 flex items-center gap-3">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -239,7 +240,6 @@ export default function Results() {
             </div>
           </div>
 
-          {/* AI Feedback Section */}
           <div className="lg:col-span-7 space-y-6">
             <h3 className="text-muted-foreground text-sm font-black uppercase tracking-[0.2em] px-2 flex items-center gap-3">
               <BrainCircuit className="w-5 h-5 text-primary" />
@@ -273,16 +273,6 @@ export default function Results() {
                               {aiFeedbacks[q.id]?.score !== undefined ? (aiFeedbacks[q.id].score * 100).toFixed(0) : 0}%
                             </span>
                           </div>
-                        </div>
-                        <div className="flex gap-3 mt-4">
-                          <span className={cn(
-                            "px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm",
-                            attempt.answers?.[q.id]?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase() 
-                              ? "bg-green-600 text-white" 
-                              : "bg-red-600 text-white"
-                          )}>
-                            Son Cavab: {attempt.answers?.[q.id]?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase() ? 'Doğru' : 'Yanlış'}
-                          </span>
                         </div>
                       </CardHeader>
                       <CardContent className="p-8 space-y-6">
