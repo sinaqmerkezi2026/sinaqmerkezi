@@ -245,7 +245,7 @@ export default function Results() {
           </CardContent>
         </Card>
 
-        {/* Question Navigation Grid (The Image Request) */}
+        {/* Question Navigation Grid */}
         <div className="space-y-6">
           <div className="flex items-center gap-3 px-2">
             <ListChecks className="w-6 h-6 text-primary" />
@@ -392,44 +392,46 @@ export default function Results() {
                     </div>
                   )}
 
-                  {/* Appeal Action */}
-                  <div className="flex justify-end pt-4 border-t border-border/50">
-                    {existingAppeal ? (
-                      <Badge variant={existingAppeal.status === 'approved' ? 'default' : existingAppeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-xl py-2 px-6 font-black">
-                        {existingAppeal.status === 'pending' ? 'Apelyasiya Gözləmədə' : existingAppeal.status === 'approved' ? `Təsdiqləndi (+${existingAppeal.awardedScore})` : 'Apelyasiya Rədd Edildi'}
-                      </Badge>
-                    ) : (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="rounded-xl font-black gap-2 hover:bg-primary/10 hover:text-primary transition-all border-primary/20 text-primary">
-                            <MessageSquarePlus className="w-4 h-4" />
-                            Apelyasiya Ver
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="rounded-[2rem]">
-                          <DialogHeader>
-                            <DialogTitle className="text-2xl font-black">Apelyasiya Müraciəti</DialogTitle>
-                            <DialogDescription className="font-medium">
-                              Bu sualın qiymətləndirilməsində səhv olduğunu düşünürsünüzsə, səbəbi ətraflı qeyd edin.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="py-4">
-                            <Textarea 
-                              placeholder="Məs: Hesablamam düzdür, lakin AI teoremi səhv sayıb..."
-                              value={appealReason}
-                              onChange={(e) => setAppealReason(e.target.value)}
-                              className="min-h-[150px] rounded-2xl border-2 focus:ring-primary"
-                            />
-                          </div>
-                          <DialogFooter>
-                            <Button className="rounded-xl font-black px-8" onClick={() => handleAppeal(q.id)} disabled={isSubmittingAppeal}>
-                              {isSubmittingAppeal ? 'Göndərilir...' : 'Müraciət Et'}
+                  {/* Appeal Action - Restricted to Explanation type */}
+                  {q.type === 'explanation' && (
+                    <div className="flex justify-end pt-4 border-t border-border/50">
+                      {existingAppeal ? (
+                        <Badge variant={existingAppeal.status === 'approved' ? 'default' : existingAppeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-xl py-2 px-6 font-black">
+                          {existingAppeal.status === 'pending' ? 'Apelyasiya Gözləmədə' : existingAppeal.status === 'approved' ? `Təsdiqləndi (+${existingAppeal.awardedScore})` : 'Apelyasiya Rədd Edildi'}
+                        </Badge>
+                      ) : (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" className="rounded-xl font-black gap-2 hover:bg-primary/10 hover:text-primary transition-all border-primary/20 text-primary">
+                              <MessageSquarePlus className="w-4 h-4" />
+                              Apelyasiya Ver
                             </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                  </div>
+                          </DialogTrigger>
+                          <DialogContent className="rounded-[2rem]">
+                            <DialogHeader>
+                              <DialogTitle className="text-2xl font-black">Apelyasiya Müraciəti</DialogTitle>
+                              <DialogDescription className="font-medium">
+                                Bu sualın qiymətləndirilməsində səhv olduğunu düşünürsünüzsə, səbəbi ətraflı qeyd edin.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4">
+                              <Textarea 
+                                placeholder="Məs: Hesablamam düzdür, lakin AI teoremi səhv sayıb..."
+                                value={appealReason}
+                                onChange={(e) => setAppealReason(e.target.value)}
+                                className="min-h-[150px] rounded-2xl border-2 focus:ring-primary"
+                              />
+                            </div>
+                            <DialogFooter>
+                              <Button className="rounded-xl font-black px-8" onClick={() => handleAppeal(q.id)} disabled={isSubmittingAppeal}>
+                                {isSubmittingAppeal ? 'Göndərilir...' : 'Müraciət Et'}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
