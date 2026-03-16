@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy, MessageSquarePlus, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy, MessageSquarePlus, Clock, Link as LinkIcon } from 'lucide-react';
 import { gradeExplanationQuestion } from '@/ai/flows/grade-explanation-question-flow';
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { doc, getDoc, updateDoc, collection, setDoc, query, where } from 'firebase/firestore';
@@ -163,6 +162,23 @@ export default function Results() {
     }
   };
 
+  const handleShare = () => {
+    const url = `${window.location.origin}/results/${code}`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast({
+        title: "Link kopyalandı",
+        description: "Nəticə linki müvəffəqiyyətlə yaddaşa kopyalandı.",
+      });
+    }).catch((err) => {
+      console.error('Kopyalama xətası:', err);
+      toast({
+        title: "Xəta",
+        description: "Linki kopyalamaq mümkün olmadı.",
+        variant: "destructive"
+      });
+    });
+  };
+
   if (isCodeLoading || isAttemptLoading || isExamLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -199,7 +215,7 @@ export default function Results() {
           </Button>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button variant="outline" className="rounded-xl font-bold bg-card shadow-sm border-border/50" onClick={() => window.print()}>
+            <Button variant="outline" className="rounded-xl font-bold bg-card shadow-sm border-border/50" onClick={handleShare}>
               <Share2 className="w-5 h-5 mr-2" />
               Paylaş
             </Button>
