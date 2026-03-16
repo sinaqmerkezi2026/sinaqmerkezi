@@ -1,7 +1,7 @@
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, limit } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, Medal, ArrowLeft, Loader2, GraduationCap, Crown } from 'lucide-react';
@@ -10,24 +10,27 @@ import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useMemo } from 'react';
 
 export default function RankingPage() {
   const router = useRouter();
   const firestore = useFirestore();
 
-  // Reytinq sorğusunu optimallaşdırırıq. 
-  // Qeyd: totalScore sahəsi olmayan sənədlər siyahıya düşməyəcək.
+  // Mürəkkəb indeks tələb olunmaması üçün sadə sorğu istifadə edirik
   const rankingQuery = useMemoFirebase(() => {
-    const colRef = collection(firestore, 'studentAttempts');
-    return query(
-      colRef,
-      where('isCompleted', '==', true),
-      orderBy('totalScore', 'desc'),
-      limit(50)
-    );
+    return query(collection(firestore, 'studentAttempts'), limit(100));
   }, [firestore]);
 
-  const { data: rankings, isLoading, error } = useCollection(rankingQuery);
+  const { data: rawAttempts, isLoading, error } = useCollection(rankingQuery);
+
+  // Məlumatları müştəri tərəfində filtrləyib sıralayırıq (Index xətalarından qaçmaq üçün)
+  const rankings = useMemo(() => {
+    if (!rawAttempts) return [];
+    return rawAttempts
+      .filter((a: any) => a.isCompleted === true && typeof a.totalScore === 'number')
+      .sort((a: any, b: any) => (b.totalScore || 0) - (a.totalScore || 0))
+      .slice(0, 50);
+  }, [rawAttempts]);
 
   if (isLoading) {
     return (
@@ -69,12 +72,13 @@ export default function RankingPage() {
           {error ? (
             <Card className="p-12 text-center border-destructive/20 bg-destructive/5 rounded-[2rem]">
               <p className="text-destructive font-bold text-lg">Məlumatları yükləyərkən xəta baş verdi.</p>
-              <p className="text-sm text-muted-foreground mt-2">Zəhmət olmasa bir az sonra yenidən cəhd edin. nəticələr görsənmir</p>
+              <p className="text-sm text-muted-foreground mt-2">Sistem tənzimlənir, zəhmət olmasa bir az sonra yenidən cəhd edin.</p>
             </Card>
           ) : !rankings || rankings.length === 0 ? (
             <Card className="border-dashed border-4 py-24 flex flex-col items-center justify-center text-muted-foreground bg-transparent rounded-[3rem]">
               <Trophy className="w-16 h-16 mb-4 opacity-10" />
-              <p className="text-xl font-bold">Hələ heç bir nəticə yoxdur</p>
+              <p className="text-xl font-bold">Hələ heç bir tamamlanmış nəticə yoxdur</p>
+              <p className="text-sm mt-2 opacity-50">İmtahanı bitirdikdən sonra nəticəniz burada görünəcək.</p>
             </Card>
           ) : (
             <div className="space-y-4">
@@ -125,7 +129,7 @@ export default function RankingPage() {
                             </span>
                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                               <GraduationCap className="w-3 h-3" />
-                              Sessiya ID: {attempt.id.substring(0, 6)}
+                              ID: {attempt.id.substring(0, 6)}
                             </span>
                           </div>
                         </div>
@@ -139,7 +143,7 @@ export default function RankingPage() {
                           {Math.round(attempt.totalScore || 0)}%
                         </div>
                         <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-black">
-                          {attempt.totalScore > 80 ? 'Əla' : attempt.totalScore > 50 ? 'Yaxşı' : 'Kafi'}
+                          {attempt.totalScore >= 90 ? 'Əla' : attempt.totalScore >= 70 ? 'Yaxşı' : 'Kafi'}
                         </Badge>
                       </div>
                     </CardContent>
