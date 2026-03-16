@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -148,6 +149,16 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteExam = async (examId: string) => {
+    if (!confirm("Bu imtahanı silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.")) return;
+    try {
+      await deleteDoc(doc(firestore, 'exams', examId));
+      toast({ title: 'Uğurlu', description: 'İmtahan uğurla silindi.' });
+    } catch (e) {
+      toast({ title: 'Xəta', description: 'İmtahanı silmək mümkün olmadı.', variant: 'destructive' });
+    }
+  };
+
   const togglePromoStatus = async (promoId: string, field: 'isActive' | 'isUsed', currentVal: boolean) => {
     try {
       await updateDoc(doc(firestore, 'promoCodes', promoId), { [field]: !currentVal });
@@ -236,9 +247,20 @@ export default function AdminDashboard() {
                         <span>{exam.price?.toFixed(2)} AZN</span>
                       </div>
                     </CardContent>
-                    <CardFooter className="pt-4 border-t border-border/50">
-                      <Button variant="ghost" className="w-full font-black text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl" onClick={() => router.push(`/nicat/admin/exam/${exam.id}`)}>
+                    <CardFooter className="pt-4 border-t border-border/50 gap-2">
+                      <Button 
+                        variant="ghost" 
+                        className="flex-1 font-black text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl" 
+                        onClick={() => router.push(`/nicat/admin/exam/${exam.id}`)}
+                      >
                         <Edit className="w-4 h-4 mr-2" /> Redaktə
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        className="px-3 font-black text-destructive hover:bg-destructive/10 rounded-xl" 
+                        onClick={() => handleDeleteExam(exam.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </CardFooter>
                   </Card>
