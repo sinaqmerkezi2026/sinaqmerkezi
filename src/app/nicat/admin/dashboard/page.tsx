@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -137,10 +136,8 @@ export default function AdminDashboard() {
                if (!ans) return;
                
                if (q.id === selectedAppeal.questionId) {
-                 // Current question being appealed - use new score
                  earnedPoints += awardedScore;
                } else {
-                 // Other questions - check if there's already a result
                  const existingRes = updatedResults[q.id];
                  if (existingRes && typeof existingRes.score === 'number') {
                    earnedPoints += existingRes.score;
