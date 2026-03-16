@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
@@ -202,16 +203,20 @@ export default function Results() {
   const maxPoints = exam.questions?.length || 0;
 
   return (
-    <div className="min-h-screen bg-background p-6 font-body pb-24">
-      <div className="max-w-5xl mx-auto space-y-12">
-        <header className="flex justify-between items-center sticky top-0 z-[60] bg-background/80 backdrop-blur-md py-4">
-          <Button variant="ghost" onClick={() => router.push('/')} className="rounded-xl font-bold hover:bg-muted shadow-sm">
+    <div className="min-h-screen bg-background p-6 font-body pb-24 relative overflow-hidden">
+      {/* Background Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="max-w-5xl mx-auto space-y-12 relative z-10">
+        <header className="flex justify-between items-center sticky top-0 z-[60] bg-background/20 backdrop-blur-2xl py-4 px-6 rounded-3xl border border-white/10 shadow-2xl">
+          <Button variant="ghost" onClick={() => router.push('/')} className="rounded-xl font-bold hover:bg-muted/50 shadow-sm border border-transparent">
             <ArrowLeft className="w-5 h-5 mr-2" />
             Ana Səhifə
           </Button>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button variant="outline" className="rounded-xl font-bold bg-card shadow-sm border-border/50" onClick={handleShare}>
+            <Button variant="outline" className="rounded-xl font-bold bg-background/50 backdrop-blur-md shadow-sm border-white/10 hover:scale-105 transition-all" onClick={handleShare}>
               <Share2 className="w-5 h-5 mr-2" />
               Paylaş
             </Button>
@@ -219,39 +224,41 @@ export default function Results() {
         </header>
 
         {/* Hero Score Card */}
-        <Card className="border-none shadow-2xl bg-gradient-to-br from-primary via-primary/80 to-blue-900 text-white rounded-[3rem] overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12">
-            <Trophy className="w-64 h-64 text-white" />
+        <Card className="border-none shadow-[0_32px_64px_-15px_rgba(0,0,0,0.4)] bg-gradient-to-br from-primary via-primary/80 to-blue-700 text-white rounded-[4rem] overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 group-hover:rotate-0 transition-transform duration-1000">
+            <Trophy className="w-80 h-80 text-white" />
           </div>
-          <CardContent className="relative z-10 py-16 flex flex-col items-center">
-            <div className="bg-white/10 p-6 rounded-[2rem] backdrop-blur-md mb-6 shadow-2xl border border-white/20">
-              <Award className="w-16 h-16 text-white" />
+          <CardContent className="relative z-10 py-20 flex flex-col items-center">
+            <div className="bg-white/10 p-8 rounded-[2.5rem] backdrop-blur-md mb-8 shadow-2xl border border-white/20 animate-bounce">
+              <Award className="w-20 h-20 text-white" />
             </div>
-            <CardTitle className="text-4xl font-black mb-3 drop-shadow-md text-white">İmtahan Bitdi!</CardTitle>
-            <CardDescription className="text-white/80 text-lg font-medium mb-8 max-w-lg text-center">
-              Təbriklər <span className="text-white font-black">{attempt.studentFirstName} {attempt.studentLastName}</span>, nəticəniz hesablandı.
+            <CardTitle className="text-5xl font-black mb-4 drop-shadow-2xl text-white tracking-tight">İmtahan Tamamlandı!</CardTitle>
+            <CardDescription className="text-white/80 text-xl font-semibold mb-12 max-w-lg text-center leading-relaxed">
+              Əla iş! <span className="text-white font-black underline decoration-white/30 decoration-4 underline-offset-8">{attempt.studentFirstName} {attempt.studentLastName}</span>, nəticəniz artıq rəsmidir.
             </CardDescription>
             
             <div className="flex flex-col items-center">
-              <div className="relative text-[8rem] font-black leading-none flex items-center text-white tabular-nums drop-shadow-2xl">
+              <div className="relative text-[10rem] font-black leading-none flex items-center text-white tabular-nums drop-shadow-[0_25px_50px_rgba(0,0,0,0.5)]">
                 {earnedPoints.toFixed(earnedPoints % 1 === 0 ? 0 : 2)}
-                <span className="text-3xl font-bold mx-4 opacity-40">/</span>
-                <span className="text-5xl font-bold opacity-60">{maxPoints}</span>
+                <span className="text-4xl font-black mx-6 opacity-30">/</span>
+                <span className="text-6xl font-black opacity-50">{maxPoints}</span>
               </div>
-              <div className="mt-4 text-xs uppercase tracking-[0.5em] font-black bg-white/10 px-8 py-2 rounded-full border border-white/20 text-white">
-                Ümumi Bal Hesabı
+              <div className="mt-8 text-xs uppercase tracking-[0.6em] font-black bg-white/10 px-10 py-3 rounded-full border border-white/20 text-white shadow-xl backdrop-blur-sm">
+                Yekun Bal Hesabı
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Question Navigation Grid */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 px-2">
-            <ListChecks className="w-6 h-6 text-primary" />
-            <h3 className="text-xl font-black text-foreground">Sual Naviqasiyası</h3>
+        <div className="space-y-8">
+          <div className="flex items-center gap-4 px-4">
+            <div className="bg-primary/20 p-2.5 rounded-2xl">
+              <ListChecks className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-2xl font-black text-foreground">Sual Naviqasiyası</h3>
           </div>
-          <div className="grid grid-cols-5 sm:grid-cols-10 gap-4 bg-card/30 p-8 rounded-[2.5rem] border border-border/50 shadow-inner">
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-5 bg-card/30 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/10 shadow-2xl">
             {(exam.questions || []).map((q: any, i: number) => {
               const ans = attempt.answers?.[q.id];
               const studentFinal = ans?.finalAnswer?.trim().toLowerCase();
@@ -264,10 +271,10 @@ export default function Results() {
                   key={q.id}
                   onClick={() => scrollToQuestion(q.id)}
                   className={cn(
-                    "relative w-full aspect-square flex items-center justify-center bg-white dark:bg-card rounded-xl text-lg font-black shadow-lg transition-all hover:scale-105 active:scale-95 border-b-8",
-                    score === 1 ? "border-green-600 text-green-600" : 
-                    score > 0 ? "border-lime-500 text-lime-500" : 
-                    "border-red-600 text-red-600"
+                    "relative w-full aspect-square flex items-center justify-center bg-card rounded-2xl text-xl font-black shadow-xl transition-all hover:scale-110 active:scale-90 border-b-[10px]",
+                    score === 1 ? "border-green-500 text-green-500" : 
+                    score > 0 ? "border-lime-400 text-lime-400" : 
+                    "border-red-500 text-red-500"
                   )}
                 >
                   {i + 1}
@@ -278,10 +285,12 @@ export default function Results() {
         </div>
 
         {/* Detailed Question Review List */}
-        <div className="space-y-12 mt-16">
-          <div className="flex items-center gap-3 px-2">
-            <Sparkles className="w-6 h-6 text-primary" />
-            <h3 className="text-2xl font-black text-foreground">Ətraflı İcmal</h3>
+        <div className="space-y-16 mt-20">
+          <div className="flex items-center gap-4 px-4">
+            <div className="bg-primary/20 p-2.5 rounded-2xl">
+              <Sparkles className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-3xl font-black text-foreground">Ətraflı İcmal</h3>
           </div>
 
           {(exam.questions || []).map((q: any, i: number) => {
@@ -297,82 +306,82 @@ export default function Results() {
                 key={q.id} 
                 id={`q-review-${q.id}`}
                 className={cn(
-                  "border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card/50 backdrop-blur-sm transition-all duration-500 border-l-8",
-                  score === 1 ? "border-green-500" : score > 0 ? "border-lime-500" : "border-red-500"
+                  "border-none shadow-[0_32px_64px_-15px_rgba(0,0,0,0.2)] rounded-[3.5rem] overflow-hidden bg-card/40 backdrop-blur-3xl transition-all duration-700 border-l-[12px]",
+                  score === 1 ? "border-green-500" : score > 0 ? "border-lime-400" : "border-red-500"
                 )}
               >
-                <CardHeader className="p-8 border-b border-border/50 bg-muted/20">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex items-center gap-4">
+                <CardHeader className="p-10 border-b border-white/5 bg-muted/10">
+                  <div className="flex justify-between items-start gap-6">
+                    <div className="flex items-center gap-6">
                       <div className={cn(
-                        "w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black shadow-inner",
-                        score === 1 ? "bg-green-500 text-white" : score > 0 ? "bg-lime-500 text-white" : "bg-red-500 text-white"
+                        "w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black shadow-2xl",
+                        score === 1 ? "bg-green-500 text-white" : score > 0 ? "bg-lime-400 text-white" : "bg-red-500 text-white"
                       )}>
                         {i + 1}
                       </div>
                       <div>
-                        <CardTitle className="text-xl font-black">Sual {i + 1}</CardTitle>
-                        <CardDescription className="font-bold uppercase tracking-wider text-[10px]">
-                          {q.type === 'explanation' ? 'AI İzahlı' : q.type === 'mcq' ? 'Qapalı' : 'Açıq'}
+                        <CardTitle className="text-2xl font-black tracking-tight">Sual {i + 1}</CardTitle>
+                        <CardDescription className="font-black uppercase tracking-[0.2em] text-[10px] opacity-50 mt-1">
+                          {q.type === 'explanation' ? 'AI Dəstəkli İzah' : q.type === 'mcq' ? 'Çoxvariantlı Test' : 'Açıq Sual'}
                         </CardDescription>
                       </div>
                     </div>
                     <Badge className={cn(
-                      "rounded-full px-6 py-2 font-black text-sm shadow-md",
-                      score === 1 ? "bg-green-500" : score > 0 ? "bg-lime-500" : "bg-red-500"
+                      "rounded-full px-8 py-3 font-black text-lg shadow-xl",
+                      score === 1 ? "bg-green-500" : score > 0 ? "bg-lime-400" : "bg-red-500"
                     )}>
                       {score.toFixed(2)} Bal
                     </Badge>
                   </div>
                 </CardHeader>
                 
-                <CardContent className="p-10 space-y-10">
-                  <div className="space-y-6">
-                    <p className="text-2xl font-bold text-foreground leading-tight">{q.text}</p>
+                <CardContent className="p-12 space-y-12">
+                  <div className="space-y-8">
+                    <p className="text-3xl font-black text-foreground leading-tight tracking-tight">{q.text}</p>
                     {q.image && (
-                      <div className="max-w-lg rounded-3xl overflow-hidden border-4 border-muted/50 shadow-xl mx-auto">
-                        <img src={q.image} alt="Sual şəkli" className="w-full h-auto" />
+                      <div className="max-w-xl rounded-[2.5rem] overflow-hidden border-8 border-white/5 shadow-2xl mx-auto ring-1 ring-white/10 group">
+                        <img src={q.image} alt="Sual şəkli" className="w-full h-auto transition-transform duration-700 group-hover:scale-105" />
                       </div>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     {/* Student Answer */}
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <div className="space-y-6">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
                         <ChevronDown className="w-4 h-4" />
                         Sizin Cavabınız
                       </h4>
                       <div className={cn(
-                        "p-6 rounded-[2rem] border-2 shadow-inner font-black text-xl flex items-center gap-4",
-                        score === 1 ? "bg-green-500/5 border-green-500/20 text-green-600" :
-                        score > 0 ? "bg-lime-500/5 border-lime-500/20 text-lime-600" :
-                        "bg-red-500/5 border-red-500/20 text-red-600"
+                        "p-8 rounded-[2.5rem] border-2 shadow-inner font-black text-2xl flex items-center gap-6",
+                        score === 1 ? "bg-green-500/5 border-green-500/20 text-green-500" :
+                        score > 0 ? "bg-lime-400/5 border-lime-400/20 text-lime-600" :
+                        "bg-red-500/5 border-red-500/20 text-red-500"
                       )}>
-                        {score === 1 ? <CheckCircle2 className="w-6 h-6" /> : score > 0 ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                        {score === 1 ? <CheckCircle2 className="w-8 h-8" /> : score > 0 ? <CheckCircle2 className="w-8 h-8" /> : <XCircle className="w-8 h-8" />}
                         {studentFinal}
                       </div>
                       {q.type === 'explanation' && (
-                        <div className="bg-muted/30 p-6 rounded-2xl text-sm italic border border-border/50 text-foreground/80 leading-relaxed">
-                          <span className="font-black text-[10px] block mb-2 opacity-50 uppercase">Ətraflı İzahınız:</span>
+                        <div className="bg-background/40 backdrop-blur-xl p-8 rounded-[2rem] text-lg font-medium italic border border-white/10 text-foreground/80 leading-relaxed shadow-lg">
+                          <span className="font-black text-[10px] block mb-3 opacity-30 uppercase tracking-widest">Daxil Etdiyiniz İzah:</span>
                           "{ans?.explanation || 'İzah yazılmayıb.'}"
                         </div>
                       )}
                     </div>
 
                     {/* Correct Answer */}
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                    <div className="space-y-6">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2">
                         <ChevronDown className="w-4 h-4" />
-                        Doğru Cavab
+                        Sistemin Doğru Cavabı
                       </h4>
-                      <div className="p-6 rounded-[2rem] bg-primary/5 border-2 border-primary/20 text-primary font-black text-xl shadow-inner flex items-center gap-4">
-                        <CheckCircle2 className="w-6 h-6" />
+                      <div className="p-8 rounded-[2.5rem] bg-primary/5 border-2 border-primary/20 text-primary font-black text-2xl shadow-inner flex items-center gap-6">
+                        <CheckCircle2 className="w-8 h-8" />
                         {correctFinal}
                       </div>
                       {q.type === 'explanation' && q.explanationCriterion && (
-                        <div className="bg-primary/5 p-6 rounded-2xl text-sm text-primary/80 border border-primary/20 leading-relaxed">
-                          <span className="font-black text-[10px] block mb-2 opacity-50 uppercase">Qiymətləndirmə Meyarı:</span>
+                        <div className="bg-primary/5 backdrop-blur-xl p-8 rounded-[2rem] text-lg font-medium text-primary/80 border border-primary/20 leading-relaxed shadow-lg">
+                          <span className="font-black text-[10px] block mb-3 opacity-30 uppercase tracking-widest">Qiymətləndirmə Meyarı:</span>
                           {q.explanationCriterion}
                         </div>
                       )}
@@ -381,50 +390,52 @@ export default function Results() {
 
                   {/* AI Feedback Section */}
                   {q.type === 'explanation' && aiFeedbacks[q.id] && (
-                    <div className="bg-primary/10 p-8 rounded-[2.5rem] border-4 border-primary/20 shadow-xl space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                      <div className="flex items-center gap-3 text-primary">
-                        <BrainCircuit className="w-8 h-8" />
-                        <h4 className="text-xl font-black">AI-nın Qiymətləndirməsi</h4>
+                    <div className="bg-primary/10 backdrop-blur-3xl p-10 rounded-[3rem] border-4 border-primary/20 shadow-2xl space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
+                      <div className="flex items-center gap-4 text-primary">
+                        <div className="bg-primary/20 p-3 rounded-2xl">
+                          <BrainCircuit className="w-8 h-8" />
+                        </div>
+                        <h4 className="text-2xl font-black tracking-tight">AI Analizi və Rəyi</h4>
                       </div>
-                      <p className="text-lg font-bold leading-relaxed text-foreground">
+                      <p className="text-xl font-bold leading-relaxed text-foreground opacity-90">
                         {aiFeedbacks[q.id].feedback}
                       </p>
                     </div>
                   )}
 
-                  {/* Appeal Action - Restricted to Explanation type */}
+                  {/* Appeal Action */}
                   {q.type === 'explanation' && (
-                    <div className="flex justify-end pt-4 border-t border-border/50">
+                    <div className="flex justify-end pt-8 border-t border-white/5">
                       {existingAppeal ? (
-                        <Badge variant={existingAppeal.status === 'approved' ? 'default' : existingAppeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-xl py-2 px-6 font-black">
-                          {existingAppeal.status === 'pending' ? 'Apelyasiya Gözləmədə' : existingAppeal.status === 'approved' ? `Təsdiqləndi (+${existingAppeal.awardedScore})` : 'Apelyasiya Rədd Edildi'}
+                        <Badge variant={existingAppeal.status === 'approved' ? 'default' : existingAppeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-2xl py-3 px-8 font-black text-sm shadow-xl">
+                          {existingAppeal.status === 'pending' ? 'APELYASİYA GÖZLƏMƏDƏ' : existingAppeal.status === 'approved' ? `TƏSDİQLƏNDİ (+${existingAppeal.awardedScore})` : 'RƏDD EDİLDİ'}
                         </Badge>
                       ) : (
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="outline" className="rounded-xl font-black gap-2 hover:bg-primary/10 hover:text-primary transition-all border-primary/20 text-primary">
-                              <MessageSquarePlus className="w-4 h-4" />
-                              Apelyasiya Ver
+                            <Button variant="outline" className="rounded-2xl font-black py-7 px-10 gap-3 hover:bg-primary/10 hover:text-primary transition-all border-primary/30 text-primary text-lg shadow-xl">
+                              <MessageSquarePlus className="w-6 h-6" />
+                              Müraciət Et
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="rounded-[2rem]">
-                            <DialogHeader>
-                              <DialogTitle className="text-2xl font-black">Apelyasiya Müraciəti</DialogTitle>
-                              <DialogDescription className="font-medium">
-                                Bu sualın qiymətləndirilməsində səhv olduğunu düşünürsünüzsə, səbəbi ətraflı qeyd edin.
+                          <DialogContent className="rounded-[3rem] bg-card/90 backdrop-blur-3xl border-white/10 shadow-3xl">
+                            <DialogHeader className="p-4">
+                              <DialogTitle className="text-3xl font-black tracking-tight">Apelyasiya Müraciəti</DialogTitle>
+                              <DialogDescription className="font-bold text-lg mt-2">
+                                Qiymətləndirmə ilə razı deyilsinizsə, səbəbi bildirin.
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="py-4">
+                            <div className="py-6">
                               <Textarea 
-                                placeholder="Məs: Hesablamam düzdür, lakin AI teoremi səhv sayıb..."
+                                placeholder="Məsələn: Həll yolunda düsturu doğru qeyd etmişəm, lakin AI bal kəsib..."
                                 value={appealReason}
                                 onChange={(e) => setAppealReason(e.target.value)}
-                                className="min-h-[150px] rounded-2xl border-2 focus:ring-primary"
+                                className="min-h-[200px] rounded-3xl border-2 border-white/10 bg-background/50 text-xl p-8 focus:ring-8 focus:ring-primary/20 shadow-inner"
                               />
                             </div>
-                            <DialogFooter>
-                              <Button className="rounded-xl font-black px-8" onClick={() => handleAppeal(q.id)} disabled={isSubmittingAppeal}>
-                                {isSubmittingAppeal ? 'Göndərilir...' : 'Müraciət Et'}
+                            <DialogFooter className="p-4">
+                              <Button className="rounded-2xl font-black h-16 px-12 text-xl bg-primary shadow-2xl hover:scale-105 transition-all text-white" onClick={() => handleAppeal(q.id)} disabled={isSubmittingAppeal}>
+                                {isSubmittingAppeal ? 'Göndərilir...' : 'Müraciəti Göndər'}
                               </Button>
                             </DialogFooter>
                           </DialogContent>

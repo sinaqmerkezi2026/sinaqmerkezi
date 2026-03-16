@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
@@ -154,7 +155,7 @@ export default function ExamSession() {
             <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
             <Sparkles className="w-6 h-6 text-primary absolute top-0 right-0 animate-pulse" />
           </div>
-          <p className="text-muted-foreground font-bold text-xl">İmtahan sessiyası hazırlanır...</p>
+          <p className="text-muted-foreground font-black text-xl">İmtahan sessiyası hazırlanır...</p>
         </div>
       </div>
     );
@@ -178,71 +179,75 @@ export default function ExamSession() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col font-body">
-      <header className="bg-card/80 backdrop-blur-md border-b border-border/50 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+    <div className="min-h-screen bg-background flex flex-col font-body relative overflow-hidden">
+      {/* Background Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+
+      <header className="bg-card/40 backdrop-blur-2xl border-b border-white/10 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-2xl">
         <div className="flex items-center gap-4">
-          <div className="bg-primary/10 p-2 rounded-xl">
+          <div className="bg-primary/20 p-2.5 rounded-2xl shadow-lg">
             <GraduationCap className="w-6 h-6 text-primary" />
           </div>
           <div>
             <h1 className="font-black text-xl text-foreground hidden md:block">{exam.name}</h1>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{attempt.studentFirstName} {attempt.studentLastName}</p>
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">{attempt.studentFirstName} {attempt.studentLastName}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-6">
           <div className={cn(
-            "flex items-center gap-3 px-6 py-2 rounded-2xl font-mono text-xl font-black transition-all duration-500 shadow-inner min-w-[120px] justify-center",
-            timeLeft < 300 ? 'bg-red-500/10 text-red-500 animate-pulse border-2 border-red-500/20' : 'bg-muted/50 text-foreground'
+            "flex items-center gap-3 px-8 py-3 rounded-2xl font-mono text-2xl font-black transition-all duration-500 shadow-inner min-w-[150px] justify-center border-2",
+            timeLeft < 300 ? 'bg-red-500/10 text-red-500 animate-pulse border-red-500/30' : 'bg-background/50 text-foreground border-white/10'
           )}>
-            <Timer className={cn("w-5 h-5", timeLeft < 300 ? "text-red-500" : "text-muted-foreground")} />
+            <Timer className={cn("w-6 h-6", timeLeft < 300 ? "text-red-500" : "text-primary")} />
             {formatTime(timeLeft)}
           </div>
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button onClick={handleFinish} variant="destructive" className="font-black px-6 h-10 rounded-xl shadow-lg transition-all">
+            <Button onClick={handleFinish} variant="destructive" className="font-black px-8 h-12 rounded-[1.2rem] shadow-xl hover:scale-105 transition-all text-white">
               Bitir
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto w-full p-6 flex-1 flex flex-col space-y-8">
-        <div className="space-y-3 bg-card/30 p-6 rounded-[2rem] shadow-sm border border-border/50">
+      <div className="max-w-5xl mx-auto w-full p-6 flex-1 flex flex-col space-y-10 z-10">
+        <div className="space-y-4 bg-card/20 backdrop-blur-xl p-8 rounded-[3rem] shadow-2xl border border-white/10">
           <div className="flex justify-between items-end">
             <div className="space-y-1">
-              <span className="text-xs font-black text-primary uppercase tracking-widest">Tərəqqi</span>
-              <h2 className="text-2xl font-black text-foreground">Sual {currentIdx + 1} <span className="text-muted-foreground font-medium">/ {questions.length}</span></h2>
+              <span className="text-xs font-black text-primary uppercase tracking-[0.3em]">İmtahan Tərəqqisi</span>
+              <h2 className="text-3xl font-black text-foreground">Sual {currentIdx + 1} <span className="text-muted-foreground font-medium opacity-50">/ {questions.length}</span></h2>
             </div>
-            <span className="text-xl font-black text-primary bg-primary/10 px-4 py-1 rounded-full">{Math.round(progress)}%</span>
+            <Badge className="text-xl font-black px-6 py-2 rounded-2xl bg-primary/10 text-primary border-primary/20">{Math.round(progress)}%</Badge>
           </div>
-          <Progress value={progress} className="h-4 rounded-full bg-muted" />
+          <Progress value={progress} className="h-5 rounded-full bg-muted/30 border border-white/5" />
         </div>
 
-        <Card className="shadow-2xl border border-border/50 rounded-[2.5rem] overflow-hidden bg-card/50 backdrop-blur-sm flex-1 flex flex-col">
-          <CardHeader className="p-10 border-b border-border/50">
-            <CardTitle className="text-3xl font-black leading-tight text-foreground">
+        <Card className="shadow-2xl border border-white/10 rounded-[4rem] overflow-hidden bg-card/30 backdrop-blur-3xl flex-1 flex flex-col">
+          <CardHeader className="p-12 border-b border-white/10 bg-muted/10">
+            <CardTitle className="text-4xl font-black leading-[1.1] text-foreground tracking-tight">
               {currentQ.text}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-10 space-y-10 flex-1">
+          <CardContent className="p-12 space-y-12 flex-1">
             {currentQ.image && (
-              <div className="rounded-[2rem] border-8 border-muted/30 overflow-hidden bg-card shadow-2xl max-w-2xl mx-auto group">
+              <div className="rounded-[3rem] border-[12px] border-white/5 overflow-hidden bg-card/50 shadow-2xl max-w-2xl mx-auto group ring-1 ring-white/10">
                 <img 
                   src={currentQ.image} 
                   alt="Sual şəkli" 
-                  className="w-full h-auto transition-transform duration-500 group-hover:scale-105" 
+                  className="w-full h-auto transition-transform duration-700 group-hover:scale-110" 
                 />
               </div>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-8">
               {currentQ.type === 'mcq' && (
                 <RadioGroup 
                   value={attempt.answers?.[currentQ.id]?.finalAnswer || ''} 
                   onValueChange={(val) => updateAnswer(currentQ.id, val)}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-8"
                 >
                   {(currentQ.options || []).map((opt: string, i: number) => {
                     const isSelected = attempt.answers?.[currentQ.id]?.finalAnswer === opt;
@@ -250,19 +255,19 @@ export default function ExamSession() {
                       <Label 
                         key={i} 
                         className={cn(
-                          "flex items-center gap-6 p-6 rounded-3xl border-4 cursor-pointer transition-all duration-300 relative overflow-hidden group",
+                          "flex items-center gap-8 p-8 rounded-[2.5rem] border-4 cursor-pointer transition-all duration-500 relative overflow-hidden group shadow-lg",
                           isSelected 
-                            ? "border-primary bg-primary/10 shadow-xl scale-[1.02]" 
-                            : "border-border/50 hover:border-primary/50 hover:bg-muted/30"
+                            ? "border-primary bg-primary/10 shadow-2xl scale-[1.03] ring-4 ring-primary/20" 
+                            : "border-white/5 bg-background/20 hover:border-primary/40 hover:bg-muted/30 hover:scale-[1.01]"
                         )}
                       >
                         <div className={cn(
-                          "w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black transition-colors shadow-sm",
-                          isSelected ? "bg-primary text-white" : "bg-muted text-muted-foreground group-hover:bg-muted/80"
+                          "w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black transition-all shadow-xl",
+                          isSelected ? "bg-primary text-white scale-110" : "bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
                         )}>
                           {String.fromCharCode(65 + i)}
                         </div>
-                        <span className="text-xl font-bold text-foreground flex-1">{opt}</span>
+                        <span className="text-2xl font-bold text-foreground flex-1 tracking-tight">{opt}</span>
                         <RadioGroupItem value={opt} className="hidden" />
                       </Label>
                     );
@@ -271,11 +276,11 @@ export default function ExamSession() {
               )}
 
               {currentQ.type === 'open' && (
-                <div className="max-w-xl mx-auto space-y-4">
-                  <div className="p-8 bg-muted/20 rounded-[2rem] border-4 border-dashed border-border/50 space-y-4">
-                    <Label className="text-xl font-black text-foreground block text-center">Cavabınızı daxil edin:</Label>
+                <div className="max-w-2xl mx-auto space-y-6">
+                  <div className="p-12 bg-muted/10 backdrop-blur-xl rounded-[4rem] border-4 border-dashed border-white/10 space-y-6 shadow-2xl flex flex-col items-center">
+                    <Label className="text-2xl font-black text-foreground uppercase tracking-widest text-center opacity-70">Cavabınızı Daxil Edin</Label>
                     <Input 
-                      className="h-20 text-3xl font-black text-center px-6 rounded-2xl border-none shadow-2xl focus:ring-primary bg-card text-foreground"
+                      className="h-24 text-5xl font-black text-center px-10 rounded-[2rem] border-none shadow-[0_20px_50px_rgba(0,0,0,0.3)] bg-background text-foreground focus:ring-8 focus:ring-primary/20 transition-all w-full"
                       value={attempt.answers?.[currentQ.id]?.finalAnswer || ''}
                       onChange={(e) => updateAnswer(currentQ.id, e.target.value)}
                       placeholder="..."
@@ -285,34 +290,34 @@ export default function ExamSession() {
               )}
 
               {currentQ.type === 'explanation' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <div className="space-y-4">
-                    <Label className="text-xl font-black text-foreground flex items-center gap-3">
-                      <span className="bg-primary text-white w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">1</span>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                  <div className="space-y-6">
+                    <Label className="text-2xl font-black text-foreground flex items-center gap-4">
+                      <div className="bg-primary text-white w-12 h-12 rounded-[1.2rem] flex items-center justify-center text-xl shadow-2xl">1</div>
                       Ətraflı İzah
                     </Label>
                     <Textarea 
-                      className="min-h-[350px] text-xl leading-relaxed rounded-[2rem] border-4 border-border/20 p-8 shadow-inner bg-muted/20 focus:bg-card focus:border-primary/40 transition-all text-foreground"
-                      placeholder="Məsələnin həll yolunu və izahını ətraflı şəkildə bura yazın..."
+                      className="min-h-[450px] text-2xl leading-relaxed rounded-[3rem] border-4 border-white/5 p-10 shadow-2xl bg-background/30 focus:bg-background focus:ring-8 focus:ring-primary/20 transition-all text-foreground resize-none"
+                      placeholder="Məsələnin həll yolunu və məntiqini ətraflı şəkildə bura yazın..."
                       value={attempt.answers?.[currentQ.id]?.explanation || ''}
                       onChange={(e) => updateAnswer(currentQ.id, attempt.answers?.[currentQ.id]?.finalAnswer || '', e.target.value)}
                     />
                   </div>
-                  <div className="space-y-4">
-                    <Label className="text-xl font-black text-primary flex items-center gap-3">
-                      <span className="bg-primary text-white w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-lg">2</span>
-                      Yekun Cavab
+                  <div className="space-y-6">
+                    <Label className="text-2xl font-black text-primary flex items-center gap-4">
+                      <div className="bg-primary text-white w-12 h-12 rounded-[1.2rem] flex items-center justify-center text-xl shadow-2xl">2</div>
+                      Yekun Nəticə
                     </Label>
-                    <div className="p-10 bg-primary/5 rounded-[2.5rem] border-4 border-primary/10 shadow-inner flex flex-col items-center justify-center space-y-6">
+                    <div className="p-12 bg-primary/5 rounded-[4rem] border-4 border-primary/20 shadow-2xl flex flex-col items-center justify-center space-y-10 flex-1">
                       <Input 
-                        placeholder="Son cavab..."
-                        className="h-20 bg-card text-3xl font-black text-center rounded-[1.5rem] border-none shadow-2xl focus:ring-primary w-full text-foreground"
+                        placeholder="Yekun cavab..."
+                        className="h-24 bg-background text-5xl font-black text-center rounded-[2rem] border-none shadow-[0_25px_60px_rgba(0,0,0,0.4)] focus:ring-10 focus:ring-primary/30 w-full text-foreground"
                         value={attempt.answers?.[currentQ.id]?.finalAnswer || ''}
                         onChange={(e) => updateAnswer(currentQ.id, e.target.value, attempt.answers?.[currentQ.id]?.explanation)}
                       />
-                      <div className="flex items-center gap-2 text-primary font-bold bg-primary/10 px-6 py-2 rounded-full">
-                        <Sparkles className="w-5 h-5" />
-                        <span className="text-sm">AI tərəfindən ballandırılacaq</span>
+                      <div className="flex items-center gap-3 text-primary font-black bg-primary/10 px-8 py-3 rounded-full border border-primary/20 shadow-lg animate-pulse">
+                        <Sparkles className="w-6 h-6" />
+                        <span className="text-sm uppercase tracking-widest">AI Qiymətləndirmə Aktivdir</span>
                       </div>
                     </div>
                   </div>
@@ -322,19 +327,19 @@ export default function ExamSession() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 pb-12">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-8 pb-16">
           <Button 
             variant="outline" 
             size="lg" 
             disabled={currentIdx === 0}
             onClick={() => setCurrentIdx(p => p - 1)}
-            className="rounded-2xl h-16 px-10 border-2 font-black text-lg bg-card shadow-md hover:bg-muted"
+            className="rounded-[2rem] h-20 px-12 border-4 font-black text-xl bg-card/40 backdrop-blur-xl shadow-2xl hover:bg-muted hover:scale-105 transition-all disabled:opacity-20"
           >
-            <ChevronLeft className="w-6 h-6 mr-2" />
+            <ChevronLeft className="w-8 h-8 mr-3" />
             Əvvəlki
           </Button>
 
-          <div className="flex flex-wrap justify-center gap-3 bg-card/30 p-4 rounded-[2rem] backdrop-blur-sm border border-border/50">
+          <div className="flex flex-wrap justify-center gap-4 bg-background/20 backdrop-blur-3xl p-6 rounded-[3rem] border border-white/10 shadow-2xl">
             {questions.map((_: any, i: number) => {
               const isAnswered = !!attempt.answers?.[questions[i].id]?.finalAnswer;
               const isCurrent = i === currentIdx;
@@ -343,12 +348,12 @@ export default function ExamSession() {
                   key={i}
                   onClick={() => setCurrentIdx(i)}
                   className={cn(
-                    "w-12 h-12 rounded-2xl text-lg font-black transition-all duration-300 transform",
+                    "w-14 h-14 rounded-2xl text-xl font-black transition-all duration-500 transform hover:scale-110 active:scale-90",
                     isCurrent 
-                      ? "bg-primary text-white scale-125 shadow-xl z-10" 
+                      ? "bg-primary text-white scale-125 shadow-[0_10px_30px_rgba(var(--primary),0.5)] z-10" 
                       : isAnswered 
-                        ? "bg-primary/20 text-primary border-2 border-primary/20" 
-                        : "bg-muted border-2 border-border/50 text-muted-foreground hover:border-primary/50"
+                        ? "bg-primary/20 text-primary border-2 border-primary/30" 
+                        : "bg-muted/30 border-2 border-white/5 text-muted-foreground/50 hover:border-primary/50"
                   )}
                 >
                   {i + 1}
@@ -361,10 +366,10 @@ export default function ExamSession() {
             size="lg"
             disabled={currentIdx === questions.length - 1}
             onClick={() => setCurrentIdx(p => p + 1)}
-            className="rounded-2xl h-16 px-10 font-black text-lg shadow-xl hover:translate-x-1 transition-all text-white"
+            className="rounded-[2rem] h-20 px-12 font-black text-xl shadow-[0_20px_50px_rgba(var(--primary),0.3)] hover:scale-110 hover:translate-x-2 transition-all text-white disabled:opacity-20"
           >
             Növbəti
-            <ChevronRight className="w-6 h-6 ml-2" />
+            <ChevronRight className="w-8 h-8 ml-3" />
           </Button>
         </div>
       </div>

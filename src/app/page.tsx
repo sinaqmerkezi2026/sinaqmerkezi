@@ -114,14 +114,18 @@ export default function StudentEntry() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center p-6 relative overflow-hidden space-y-12">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
+    <div className="min-h-screen bg-background flex flex-col items-center p-6 relative overflow-hidden">
+      {/* Dynamic Background Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse pointer-events-none delay-1000" />
+      <div className="absolute top-[40%] left-[20%] w-[30%] h-[30%] bg-purple-500/10 rounded-full blur-[100px] animate-pulse pointer-events-none delay-500" />
 
-      <header className="w-full max-w-6xl flex justify-between items-center z-20">
-        <div className="flex items-center gap-2">
-          <GraduationCap className="w-8 h-8 text-primary" />
-          <span className="font-black text-xl tracking-tight text-foreground">Sınaq<span className="text-primary">Mərkəzi</span></span>
+      <header className="w-full max-w-6xl flex justify-between items-center z-50 py-4 px-4 bg-background/20 backdrop-blur-xl rounded-3xl border border-white/10 mt-2 shadow-2xl">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary p-2 rounded-2xl shadow-lg shadow-primary/20">
+            <GraduationCap className="w-6 h-6 text-white" />
+          </div>
+          <span className="font-black text-2xl tracking-tight text-foreground">Sınaq<span className="text-primary">Mərkəzi</span></span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
           <Button 
@@ -144,71 +148,73 @@ export default function StudentEntry() {
         </div>
       </header>
 
-      <div className="w-full max-w-6xl mt-4 space-y-16 relative z-10">
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center p-4 bg-card shadow-2xl rounded-3xl mb-2 animate-bounce border border-border/50">
-            <GraduationCap className="w-12 h-12 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <h1 className="text-5xl font-black tracking-tight text-foreground flex items-center justify-center gap-2">
-              Biliyini<span className="text-primary">Yoxla</span>
-              <Sparkles className="w-6 h-6 text-yellow-500" />
+      <div className="w-full max-w-6xl mt-12 space-y-20 relative z-10 flex-1">
+        <div className="text-center space-y-6">
+          <Badge variant="outline" className="px-4 py-1.5 rounded-full bg-primary/10 text-primary border-primary/20 font-black animate-bounce shadow-xl">
+            🎉 YENİ İMTAHANLAR ƏLAVƏ EDİLDİ
+          </Badge>
+          <div className="space-y-4">
+            <h1 className="text-6xl md:text-8xl font-black tracking-tight text-foreground leading-[0.9]">
+              Biliyini<br /><span className="text-primary relative inline-block">Yoxla
+                <Sparkles className="w-8 h-8 text-yellow-500 absolute -top-4 -right-8 animate-pulse" />
+              </span>
             </h1>
-            <p className="text-muted-foreground font-medium text-lg">Onlayn imtahan platformasına xoş gəlmisiniz</p>
+            <p className="text-muted-foreground font-semibold text-xl md:text-2xl max-w-2xl mx-auto leading-relaxed">
+              Azərbaycanın ən müasir AI dəstəkli onlayn imtahan platforması.
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start pb-20">
+          <div className="space-y-8">
             <div className="flex items-center justify-between px-2">
-              <h2 className="text-2xl font-black text-foreground flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="text-3xl font-black text-foreground flex items-center gap-3">
+                <div className="bg-primary/20 p-2 rounded-xl">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                </div>
                 Aktiv İmtahanlar
               </h2>
-              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-black">
-                Yeni
-              </Badge>
             </div>
 
             {isExamsLoading ? (
-              <div className="h-64 flex items-center justify-center bg-card/30 rounded-[2rem] border border-dashed border-border/50">
-                <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
+              <div className="h-64 flex items-center justify-center bg-card/40 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
               </div>
             ) : activeExams && activeExams.length > 0 ? (
-              <Carousel className="w-full">
+              <Carousel className="w-full" opts={{ loop: true }}>
                 <CarouselContent>
                   {activeExams.map((exam: any) => (
-                    <CarouselItem key={exam.id} className="md:basis-full lg:basis-full">
-                      <Card className="border-none shadow-xl bg-card/50 backdrop-blur-xl rounded-[2.5rem] overflow-hidden group hover:ring-2 ring-primary/20 transition-all">
-                        <CardContent className="p-8 space-y-6">
-                          <div className="space-y-2">
-                            <h3 className="text-3xl font-black text-foreground group-hover:text-primary transition-colors">{exam.name}</h3>
-                            <p className="text-muted-foreground font-medium">Bu imtahana qoşularaq biliyinizi yoxlayın.</p>
+                    <CarouselItem key={exam.id}>
+                      <Card className="border-none shadow-[0_32px_64px_-15px_rgba(0,0,0,0.3)] bg-card/40 backdrop-blur-2xl rounded-[3rem] overflow-hidden group hover:ring-4 ring-primary/20 transition-all duration-500">
+                        <CardContent className="p-10 space-y-8">
+                          <div className="space-y-3">
+                            <h3 className="text-4xl font-black text-foreground group-hover:text-primary transition-colors leading-tight">{exam.name}</h3>
+                            <p className="text-muted-foreground font-medium text-lg leading-relaxed">Bu imtahana qoşularaq biliyinizi ən müasir AI meyarları ilə yoxlayın.</p>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-muted/30 p-4 rounded-2xl flex items-center gap-3">
-                              <div className="bg-primary/10 p-2 rounded-xl">
-                                <Clock className="w-5 h-5 text-primary" />
+                          <div className="grid grid-cols-2 gap-6">
+                            <div className="bg-background/40 backdrop-blur-md p-6 rounded-3xl flex items-center gap-4 border border-white/5 shadow-inner">
+                              <div className="bg-primary/10 p-3 rounded-2xl">
+                                <Clock className="w-6 h-6 text-primary" />
                               </div>
                               <div>
                                 <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Müddət</p>
-                                <p className="text-sm font-bold">{exam.durationMinutes} dəq</p>
+                                <p className="text-lg font-bold">{exam.durationMinutes} dəq</p>
                               </div>
                             </div>
-                            <div className="bg-primary/10 p-4 rounded-2xl flex items-center gap-3">
-                              <div className="bg-primary/20 p-2 rounded-xl">
-                                <DollarSign className="w-5 h-5 text-primary" />
+                            <div className="bg-primary/5 backdrop-blur-md p-6 rounded-3xl flex items-center gap-4 border border-primary/10 shadow-inner">
+                              <div className="bg-primary/20 p-3 rounded-2xl">
+                                <DollarSign className="w-6 h-6 text-primary" />
                               </div>
                               <div>
                                 <p className="text-[10px] font-black uppercase text-primary/60 tracking-widest">Qiymət</p>
-                                <p className="text-sm font-bold text-primary">{exam.price} AZN</p>
+                                <p className="text-lg font-bold text-primary">{exam.price} AZN</p>
                               </div>
                             </div>
                           </div>
 
                           <Button 
-                            className="w-full h-14 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-3 text-white"
+                            className="w-full h-16 rounded-[2rem] font-black text-xl bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 gap-4 text-white hover:scale-[1.02] transition-transform"
                             onClick={() => handleBuyByTelegram(exam)}
                           >
                             <Send className="w-6 h-6" />
@@ -220,57 +226,59 @@ export default function StudentEntry() {
                   ))}
                 </CarouselContent>
                 <div className="hidden sm:block">
-                  <CarouselPrevious className="-left-4 bg-card/80 border-border/50 hover:bg-primary hover:text-white transition-colors" />
-                  <CarouselNext className="-right-4 bg-card/80 border-border/50 hover:bg-primary hover:text-white transition-colors" />
+                  <CarouselPrevious className="-left-6 h-12 w-12 bg-card/60 backdrop-blur-xl border-white/10 hover:bg-primary hover:text-white" />
+                  <CarouselNext className="-right-6 h-12 w-12 bg-card/60 backdrop-blur-xl border-white/10 hover:bg-primary hover:text-white" />
                 </div>
               </Carousel>
             ) : (
-              <div className="h-64 flex flex-col items-center justify-center bg-card/30 rounded-[2rem] border border-dashed border-border/50 text-muted-foreground">
-                <p className="font-bold">Hazırda aktiv imtahan yoxdur.</p>
+              <div className="h-64 flex flex-col items-center justify-center bg-card/40 backdrop-blur-2xl rounded-[3rem] border border-dashed border-white/10 text-muted-foreground shadow-2xl">
+                <p className="font-bold text-xl">Hazırda aktiv imtahan yoxdur.</p>
               </div>
             )}
           </div>
 
-          <div className="space-y-6">
-            <h2 className="text-2xl font-black text-foreground px-2 flex items-center gap-2">
-              <Ticket className="w-5 h-5 text-primary" />
+          <div className="space-y-8">
+            <h2 className="text-3xl font-black text-foreground px-2 flex items-center gap-3">
+              <div className="bg-primary/20 p-2 rounded-xl">
+                <Ticket className="w-6 h-6 text-primary" />
+              </div>
               Sessiyaya Giriş
             </h2>
-            <Card className="border border-border/50 shadow-2xl bg-card/50 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
-              <CardContent className="space-y-6 p-10">
-                <div className="space-y-2">
-                  <Label htmlFor="code" className="text-sm font-bold text-muted-foreground">İmtahan Kodu</Label>
+            <Card className="border border-white/10 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.3)] bg-card/40 backdrop-blur-3xl rounded-[3rem] overflow-hidden relative">
+              <CardContent className="space-y-8 p-12">
+                <div className="space-y-3">
+                  <Label htmlFor="code" className="text-xs font-black text-muted-foreground uppercase tracking-widest px-1">İmtahan Giriş Kodu</Label>
                   <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Ticket className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                      <Ticket className="h-6 w-6 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     </div>
                     <Input 
                       id="code" 
                       placeholder="MƏS: A7B2C9" 
-                      className="pl-12 uppercase font-mono tracking-[0.3em] text-xl h-14 rounded-2xl border-2 border-border/50 focus:border-primary focus:ring-primary/20 transition-all bg-muted/20 text-foreground"
+                      className="pl-14 uppercase font-mono tracking-[0.4em] text-2xl h-16 rounded-2xl border-none focus:ring-4 focus:ring-primary/20 transition-all bg-background/50 text-foreground shadow-inner"
                       value={code}
                       onChange={(e) => setCode(e.target.value.toUpperCase())}
                     />
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-bold text-muted-foreground">Ad</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="name" className="text-xs font-black text-muted-foreground uppercase tracking-widest px-1">Ad</Label>
                     <Input 
                       id="name" 
                       placeholder="Adınız" 
-                      className="h-12 rounded-xl border-2 border-border/50 focus:border-primary bg-muted/20 text-foreground"
+                      className="h-14 rounded-2xl border-none focus:ring-4 focus:ring-primary/20 bg-background/50 text-foreground font-bold shadow-inner"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="surname" className="text-sm font-bold text-muted-foreground">Soyad</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="surname" className="text-xs font-black text-muted-foreground uppercase tracking-widest px-1">Soyad</Label>
                     <Input 
                       id="surname" 
                       placeholder="Soyadınız" 
-                      className="h-12 rounded-xl border-2 border-border/50 focus:border-primary bg-muted/20 text-foreground"
+                      className="h-14 rounded-2xl border-none focus:ring-4 focus:ring-primary/20 bg-background/50 text-foreground font-bold shadow-inner"
                       value={surname}
                       onChange={(e) => setSurname(e.target.value)}
                     />
@@ -278,14 +286,14 @@ export default function StudentEntry() {
                 </div>
 
                 <Button 
-                  className="w-full h-14 text-lg font-black rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] bg-primary text-white" 
+                  className="w-full h-16 text-xl font-black rounded-[2rem] shadow-2xl shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-1 transition-all duration-300 active:scale-[0.98] bg-primary text-white" 
                   onClick={handleEnter}
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                      Giriş edilir...
+                      <Loader2 className="mr-3 h-7 w-7 animate-spin" />
+                      Yoxlanılır...
                     </>
                   ) : 'İmtahana Başla'}
                 </Button>
@@ -293,11 +301,18 @@ export default function StudentEntry() {
             </Card>
           </div>
         </div>
-        
-        <p className="text-center text-muted-foreground/50 text-sm font-medium pb-8">
-          &copy; {new Date().getFullYear()} Sınaq Mərkəzi. Bütün hüquqlar qorunur.
-        </p>
       </div>
+      
+      <footer className="w-full max-w-6xl py-12 flex flex-col md:flex-row justify-between items-center gap-6 z-10 border-t border-white/5 opacity-40 hover:opacity-100 transition-opacity">
+        <p className="font-black text-sm tracking-widest uppercase">
+          &copy; {new Date().getFullYear()} Sınaq Mərkəzi. <span className="text-primary">Bəxtiniz Gətirsin!</span>
+        </p>
+        <div className="flex gap-8 font-black text-[10px] uppercase tracking-widest">
+          <a href="#" className="hover:text-primary transition-colors">Şərtlər</a>
+          <a href="#" className="hover:text-primary transition-colors">Məxfilik</a>
+          <a href="#" className="hover:text-primary transition-colors">Əlaqə</a>
+        </div>
+      </footer>
     </div>
   );
 }
