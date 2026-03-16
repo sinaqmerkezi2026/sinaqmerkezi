@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -159,6 +158,16 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteAppeal = async (appealId: string) => {
+    if (!confirm("Bu apelyasiya müraciətini silmək istədiyinizə əminsiniz?")) return;
+    try {
+      await deleteDoc(doc(firestore, 'appeals', appealId));
+      toast({ title: 'Silindi', description: 'Apelyasiya müraciəti təmizləndi.' });
+    } catch (e) {
+      toast({ title: 'Xəta', description: 'Silmək mümkün olmadı.', variant: 'destructive' });
+    }
+  };
+
   const togglePromoStatus = async (promoId: string, field: 'isActive' | 'isUsed', currentVal: boolean) => {
     try {
       await updateDoc(doc(firestore, 'promoCodes', promoId), { [field]: !currentVal });
@@ -291,9 +300,14 @@ export default function AdminDashboard() {
                           <p className="text-sm text-muted-foreground italic">"{appeal.studentReason}"</p>
                           <p className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-widest">{new Date(appeal.createdAt).toLocaleString()}</p>
                         </div>
-                        <Button variant="outline" size="sm" className="rounded-xl font-bold bg-background shadow-sm w-full sm:w-auto" onClick={() => setSelectedAppeal(appeal)}>
-                          <Info className="w-4 h-4 mr-2" /> Detallar
-                        </Button>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <Button variant="outline" size="sm" className="flex-1 sm:flex-initial rounded-xl font-bold bg-background shadow-sm" onClick={() => setSelectedAppeal(appeal)}>
+                            <Info className="w-4 h-4 mr-2" /> Detallar
+                          </Button>
+                          <Button variant="ghost" size="sm" className="px-3 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => handleDeleteAppeal(appeal.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))
                   )}
