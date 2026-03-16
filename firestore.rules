@@ -2,13 +2,15 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Sınaq mərhələsində olduğumuz üçün bütün bazaya tam oxuma və yazma icazəsi verilir.
+    // Təhlükəsizlik qaydalarının yenidən tətbiq olunmasını (redeploy) təmin etmək üçün vaxt möhürü: 2024-05-21 11:00
+    // Sınaq mərhələsində olduğumuz üçün bütün bazaya (hər bir kolleksiya və sənədə) tam oxuma və yazma icazəsi verilir.
     // Bu, həm daxil olan, həm də anonim istifadəçilər üçün keçərlidir.
+    
     match /{document=**} {
       allow read, write: if true;
     }
 
-    // Əsas kolleksiyalar üçün aşkar icazələr (Redeploy trigger)
+    // Kolleksiya səviyyəsində siyahılama (list/query) əməliyyatları üçün aşkar icazələr
     match /exams/{examId} {
       allow read, write: if true;
     }
