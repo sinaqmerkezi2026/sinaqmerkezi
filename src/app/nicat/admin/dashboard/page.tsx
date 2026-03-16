@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Image as ImageIcon, Sparkles, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Textarea } from '@/components/ui/textarea';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -74,10 +75,15 @@ export default function AdminDashboard() {
               studentAnswer,
               examName: examData.name
             });
+          } else {
+            setAppealContext({ error: "İmtahan tapılmadı." });
           }
+        } else {
+          setAppealContext({ error: "Sessiya tapılmadı." });
         }
       } catch (e) {
         console.error("Context fetch error:", e);
+        setAppealContext({ error: "Məlumat yüklənərkən xəta baş verdi." });
       } finally {
         setIsContextLoading(false);
       }
@@ -274,7 +280,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-4">
                             <span className="font-black text-foreground text-lg">{appeal.studentName}</span>
                             <Badge variant={appeal.status === 'approved' ? 'default' : appeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-lg">
-                              {appeal.status === 'pending' ? 'Gözləmədə' : appeal.status === 'approved' ? `Təsdiqləndi (+${appeal.awardedScore})` : 'Rədd edildi'}
+                              {appeal.status === 'pending' ? 'Gözləmədə' : appeal.status === 'approved' ? `Təsdiqləndi (+${appeal.awardedScore?.toFixed(2)})` : 'Rədd edildi'}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground max-w-xl line-clamp-1 italic">"{appeal.studentReason}"</p>
@@ -311,12 +317,32 @@ export default function AdminDashboard() {
           
           <ScrollArea className="flex-1">
             <div className="p-8 space-y-10 pb-20">
-              {isContextLoading ? (
+              
+              {/* Context Loading Skeleton */}
+              {isContextLoading && (
                 <div className="space-y-6">
-                  <Skeleton className="h-40 w-full rounded-2xl" />
-                  <Skeleton className="h-40 w-full rounded-2xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-32 w-full rounded-2xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                  </div>
                 </div>
-              ) : appealContext ? (
+              )}
+
+              {/* Error State */}
+              {!isContextLoading && appealContext?.error && (
+                <Alert variant="destructive" className="rounded-2xl">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Xəta</AlertTitle>
+                  <AlertDescription>{appealContext.error}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* Appeal Context Data (Question and Answer) */}
+              {!isContextLoading && appealContext && !appealContext.error && (
                 <>
                   {/* Question Section */}
                   <div className="space-y-4">
@@ -326,19 +352,19 @@ export default function AdminDashboard() {
                     </div>
                     <Card className="rounded-2xl border-none bg-muted/30 p-6 space-y-4 shadow-inner">
                       <p className="text-lg font-bold text-foreground leading-relaxed">
-                        {appealContext.question?.text}
+                        {appealContext.question?.text || "Sual mətni yoxdur."}
                       </p>
                       {appealContext.question?.image && (
                         <div className="rounded-xl overflow-hidden border-2 border-border/50 max-w-md bg-card">
                           <img src={appealContext.question.image} alt="Sual" className="w-full h-auto" />
                         </div>
                       )}
-                      <div className="flex gap-4 items-center pt-2">
+                      <div className="flex flex-wrap gap-4 items-center pt-2">
                         <Badge variant="outline" className="font-mono bg-card text-primary border-primary/20">
-                          Növ: {appealContext.question?.type}
+                          Növ: {appealContext.question?.type?.toUpperCase()}
                         </Badge>
                         <Badge variant="outline" className="font-mono bg-card text-green-500 border-green-500/20">
-                          Doğru Cavab: {appealContext.question?.correctAnswer}
+                          Sistemin Doğru Cavabı: {appealContext.question?.correctAnswer}
                         </Badge>
                       </div>
                     </Card>
@@ -348,48 +374,46 @@ export default function AdminDashboard() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-primary">
                       <User className="w-5 h-5" />
-                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Tələbənin Cavabı:</h4>
+                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Tələbənin Verdiyi Cavab:</h4>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <Card className="rounded-2xl border-none bg-primary/5 p-6 space-y-2 shadow-inner">
                         <span className="text-[10px] font-black text-primary/60 uppercase">Yekun Cavab:</span>
                         <p className="text-2xl font-black text-primary">
-                          {appealContext.studentAnswer?.finalAnswer || "Yoxdur"}
+                          {appealContext.studentAnswer?.finalAnswer || "Cavab yoxdur"}
                         </p>
                       </Card>
                       <Card className="rounded-2xl border-none bg-muted/50 p-6 space-y-2 shadow-inner">
-                        <span className="text-[10px] font-black text-muted-foreground uppercase">İzah/Həll Yolu:</span>
+                        <span className="text-[10px] font-black text-muted-foreground uppercase">Həll Yolu / İzah:</span>
                         <p className="text-sm font-medium italic text-foreground leading-relaxed">
-                          "{appealContext.studentAnswer?.explanation || "İzah daxil edilməyib."}"
+                          "{appealContext.studentAnswer?.explanation || "İzah yazılmayıb."}"
                         </p>
                       </Card>
                     </div>
                   </div>
-
-                  {/* Appeal Reason Section */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-primary">
-                      <FileText className="w-5 h-5" />
-                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Apelyasiya Səbəbi:</h4>
-                    </div>
-                    <div className="p-6 bg-destructive/5 rounded-2xl font-bold text-foreground italic border-2 border-dashed border-destructive/20 leading-relaxed">
-                      "{selectedAppeal.studentReason}"
-                    </div>
-                  </div>
                 </>
-              ) : (
-                <div className="text-center py-10 opacity-30">
-                  Məlumatlar yüklənə bilmədi.
+              )}
+
+              {/* Always show the appeal reason */}
+              {selectedAppeal && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <FileText className="w-5 h-5" />
+                    <h4 className="text-xs font-black uppercase tracking-[0.2em]">Tələbənin Apelyasiya Səbəbi:</h4>
+                  </div>
+                  <div className="p-6 bg-destructive/5 rounded-2xl font-bold text-foreground italic border-2 border-dashed border-destructive/20 leading-relaxed shadow-sm">
+                    "{selectedAppeal.studentReason}"
+                  </div>
                 </div>
               )}
 
-              {/* Decision Section */}
+              {/* Decision and Action Section */}
               <div className="space-y-6 pt-10 border-t border-border/50">
                 {selectedAppeal?.status === 'pending' ? (
                   <div className="space-y-6">
                     <div className="flex items-center gap-2 text-primary">
                       <Check className="w-5 h-5" />
-                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Qərarınız və Rəyiniz:</h4>
+                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Qərarınız və Tələbəyə Rəy:</h4>
                     </div>
                     <Textarea 
                       placeholder="Tələbəyə rəyinizi bura yazın..."
@@ -403,28 +427,28 @@ export default function AdminDashboard() {
                         onClick={() => handleAppealDecision('approved', 1)}
                         disabled={isProcessingAppeal}
                       >
-                        +1
+                        +1.00
                       </Button>
                       <Button 
                         className="bg-lime-500 hover:bg-lime-600 font-black h-14 rounded-2xl text-white shadow-lg" 
                         onClick={() => handleAppealDecision('approved', 2/3)}
                         disabled={isProcessingAppeal}
                       >
-                        +2/3
+                        +0.67
                       </Button>
                       <Button 
                         className="bg-lime-400 hover:bg-lime-500 font-black h-14 rounded-2xl text-white shadow-lg" 
                         onClick={() => handleAppealDecision('approved', 1/2)}
                         disabled={isProcessingAppeal}
                       >
-                        +1/2
+                        +0.50
                       </Button>
                       <Button 
                         className="bg-lime-300 hover:bg-lime-400 font-black h-14 rounded-2xl text-white shadow-lg" 
                         onClick={() => handleAppealDecision('approved', 1/3)}
                         disabled={isProcessingAppeal}
                       >
-                        +1/3
+                        +0.33
                       </Button>
                       <Button 
                         variant="destructive" 
@@ -438,14 +462,20 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Sizin Rəyiniz:</h4>
-                    <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl font-bold text-foreground">
+                    <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Verilən Qərar və Rəy:</h4>
+                    <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl font-bold text-foreground shadow-sm">
                       {selectedAppeal?.adminComment || "Rəy bildirilməyib."}
                     </div>
                     {selectedAppeal?.status === 'approved' && (
                       <div className="inline-flex items-center gap-2 text-lime-500 font-black bg-lime-500/10 px-6 py-2 rounded-full mt-2">
                         <Check className="w-4 h-4" />
                         Verilən bal: +{selectedAppeal?.awardedScore?.toFixed(2)}
+                      </div>
+                    )}
+                    {selectedAppeal?.status === 'rejected' && (
+                      <div className="inline-flex items-center gap-2 text-destructive font-black bg-destructive/10 px-6 py-2 rounded-full mt-2">
+                        <X className="w-4 h-4" />
+                        Rədd edildi
                       </div>
                     )}
                   </div>

@@ -58,7 +58,7 @@ Son Cavabın Doğruluğu: {{#if isFinalAnswerCorrect}}DOĞRU{{else}}SƏHV{{/if}}
 
 Zəhmət olmasa yuxarıdakı təlimatlara uyğun olaraq ən uyğun balı (0, 1/3, 1/2, 2/3 və ya 1) seç və qısa, dəstəkləyici rəy yaz.
 
-Əgər bal kəsərsən buun
+Əgər bal kəsərsən bunun səbəbinidə qeyd etməlisən. Əgər son cavab doğru olmarsa amma izah uyğun olarsa izahdan asılı olaraq bal ver.
 `
 });
 
