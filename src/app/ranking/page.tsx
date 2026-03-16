@@ -31,6 +31,15 @@ export default function RankingPage() {
       .slice(0, 50);
   }, [rawAttempts]);
 
+  const getRatingLabel = (earned: number, max: number) => {
+    const ratio = earned / max;
+    if (ratio >= 0.95) return 'Super';
+    if (ratio >= 0.85) return 'Əla';
+    if (ratio >= 0.70) return 'Yaxşı';
+    if (ratio >= 0.50) return 'Kafi';
+    return 'Qeyri kafi';
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -142,12 +151,12 @@ export default function RankingPage() {
                           "text-3xl font-black tabular-nums flex items-baseline gap-1",
                           isTop1 ? "text-yellow-500" : isTopThree ? "text-primary" : "text-foreground"
                         )}>
-                          {earned.toFixed(earned % 1 === 0 ? 0 : 1)}
+                          {earned.toFixed(earned % 1 === 0 ? 0 : 2)}
                           <span className="text-sm opacity-30">/ {max}</span>
                         </div>
                         <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-black flex gap-1">
                           <Target className="w-3 h-3" />
-                          {earned >= (max * 0.9) ? 'Əla' : earned >= (max * 0.7) ? 'Yaxşı' : 'Kafi'}
+                          {getRatingLabel(earned, max)}
                         </Badge>
                       </div>
                     </CardContent>

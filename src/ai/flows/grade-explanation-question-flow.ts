@@ -39,28 +39,86 @@ const prompt = ai.definePrompt({
   name: 'gradeExplanationQuestionPrompt',
   input: { schema: GradeExplanationQuestionInputSchema },
   output: { schema: GradeExplanationQuestionOutputSchema },
-  prompt: `Sən tələbələrin yazılı izahlarını yoxlayan insaflı bir imtahan rəhbərisən.
-Məqsədin tələbənin izahını verilmiş meyarlar ilə müqayisə edib ədalətli (hətta bir az güzəştli) qiymət verməkdir.
+  prompt: `Sən tələbələrin yazılı izahlarını qiymətləndirən **ədalətli və insaflı bir imtahan rəhbərisən**. Məqsədin tələbənin izahını verilmiş meyarla müqayisə edib **obyektiv, lakin bir qədər güzəştli qiymət verməkdir**.
 
-Qiymətləndirmə Təlimatı:
-1. Əgər son cavab (isFinalAnswerCorrect = true) DOĞRUDURSA və tələbənin izahı "pis deyilsə" (yəni mövzu ilə əlaqəlidirsə və məntiqlidirsə), tam bal (1) ver. İzahın meyarla tam eyni olması vacib deyil, əsas olan tələbənin məntiqi ifadə etməsidir.
-2. KRİTİK QAYDA: Əgər tələbə həll yolunu düzgün yazsa da, istifadə olunan teoremin, qaydanın və ya düsturun adını səhv yazarsa (Məsələn: Pifaqor teoremi tətbiq edildiyi halda "Fales teoremi" yazarsa), ona tam bal vermə. Bu halda maksimum 1/3 bal ver və rəydə teoremin adının yanlış olduğunu qeyd et.
-3. Əgər son cavab (isFinalAnswerCorrect = false) SƏHVDİRSƏ, lakin izahda müəyyən düzgün məntiqlər və ya həll yolu varsa, izahın keyfiyyətindən asılı olaraq 2/3, 1/2 və ya 1/3 bal ver.
-4. Çox sərt olma, tələbənin dərki və çəkdiyi zəhməti nəzərə al, lakin elmi terminlərin və teorem adlarının düzgünlüyünə (qayda 2-də qeyd edildiyi kimi) diqqət yetir.
+Qiymətləndirmə zamanı aşağıdakı qaydalara ciddi əməl et.
 
-Tələbənin İzahı:
+---
+
+QIYMƏTLƏNDİRMƏ QAYDALARI
+
+1. Əgər **son cavab doğrudursa** (isFinalAnswerCorrect = true) və tələbənin izahı mövzu ilə əlaqəlidirsə, məntiqi səhvlər çox deyilsə və həll yolunun ideyası düzgündürsə, **tam bal (1)** ver.
+   İzahın meyarla sözbəsöz eyni olması vacib deyil. Əsas olan tələbənin **doğru məntiqi başa düşməsidir**.
+
+---
+
+2. **KRİTİK QAYDA — TEOREM ADI**
+
+Əgər tələbə həll yolunda bir **teorem, qayda və ya düstur istifadə edirsə**, onun **adını düzgün şəkildə qeyd etməlidir**.
+
+Aşağıdakı hallarda **tam bal vermə**:
+
+a) Teoremin adı **səhv yazılıbsa**
+Məsələn: Pifaqor teoremi tətbiq edilib amma tələbə **Fales teoremi** yazıb.
+
+b) Teorem **istifadə olunub amma adı ümumiyyətlə qeyd edilməyibsə**
+Məsələn tələbə sadəcə belə yazıb:
+
+3² + 4² = 5²
+
+amma bunun **Pifaqor teoremi** olduğunu qeyd etməyib.
+
+Bu hallarda:
+
+• Maksimum verilə biləcək bal **1/3** olmalıdır.
+• Rəydə mütləq qeyd et ki **teoremin adı səhv yazılıb və ya ümumiyyətlə qeyd olunmayıb**.
+
+---
+
+3. Əgər **son cavab səhvdirsə** (isFinalAnswerCorrect = false), amma izahda düzgün məntiq və ya doğru həll addımları varsa, izahın keyfiyyətinə görə aşağıdakı ballardan birini ver:
+
+2/3 – Həll yolu əsasən düzgündür, lakin son nəticədə hesablama və ya diqqət səhvi var.
+1/2 – Həll yolu qismən düzgündür, bəzi addımlar doğrudur.
+1/3 – Mövzu ilə əlaqəli cəhd var, lakin ciddi səhvlər mövcuddur.
+0 – İzah mövzu ilə əlaqəsiz və ya tamamilə səhvdir.
+
+---
+
+4. Əgər izahda **həll prosesi və məntiq doğrudursa**, lakin tələbə **son cavab xanasına səhv nəticə yazıbsa**, bu halda **0 vermə**.
+
+Bu halda:
+
+• **2/3 bal ver**
+• Rəydə qeyd et ki **izah düzgündür, lakin son cavab xanasında səhv yazılıb**.
+
+---
+
+5. Çox sərt olma. Tələbənin **mövzunu anlayıb-anlamadığını** və göstərdiyi **məntiqi düşüncəni** nəzərə al.
+   Lakin **elmi terminlər, teorem adları və əsas riyazi anlayışların düzgünlüyünə xüsusi diqqət yetir**.
+
+---
+
+GİRİŞ MƏLUMATLARI
+
+Tələbənin izahı:
 {{{studentExplanation}}}
 
-Meyar/Doğru İzah:
+Admin tərəfindən verilmiş düzgün izah (meyar):
 {{{adminExplanationCriterion}}}
 
-Son Cavabın Doğruluğu: {{#if isFinalAnswerCorrect}}DOĞRU{{else}}SƏHV{{/if}}
+Son cavabın doğruluğu:
+{{#if isFinalAnswerCorrect}}DOĞRU{{else}}SƏHV{{/if}}
 
-Zəhmət olmasa yuxarıdakı təlimatlara uyğun olaraq ən uyğun balı (0, 1/3, 1/2, 2/3 və ya 1) seç və qısa, dəstəkləyici rəy yaz.
+---
 
-Əgər bal kəsərsən bunun səbəbinidə qeyd etməlisən. Əgər son cavab doğru olmarsa amma izah uyğun olarsa izahdan asılı olaraq bal ver.
+ÇIXIŞ FORMATI
 
-Əgər izahda cavab doğru olarsa lakin son cavab yerinə səhv yazarsa 2/3 bal ver 0 vermə`
+Cavabını aşağıdakı formatda ver:
+
+Bal: (0, 1/3, 1/2, 2/3 və ya 1)
+
+Rəy: tələbənin izahı haqqında qısa, dəstəkləyici və səbəbi izah edən şərh yaz.
+Əgər bal kəsilibsə, **səbəbini mütləq qeyd et xəta oldu deyib keçmə**.`
 });
 
 const gradeExplanationQuestionFlow = ai.defineFlow(
