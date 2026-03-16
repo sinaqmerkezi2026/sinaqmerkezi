@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Redeyploy tətiyi üçün vaxt möhürü: 2024-05-21 15:30
+    // Redeyploy tətiyi üçün vaxt möhürü: 2024-05-21 15:40
     // Heç bir autentifikasiya tələb olunmadan bütün bazaya tam oxuma və yazma icazəsi verilir.
     
     match /{document=**} {

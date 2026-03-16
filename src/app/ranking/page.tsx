@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -70,7 +69,7 @@ export default function RankingPage() {
           {error ? (
             <Card className="p-12 text-center border-destructive/20 bg-destructive/5 rounded-[2rem]">
               <p className="text-destructive font-bold text-lg">Məlumatları yükləyərkən xəta baş verdi.</p>
-              <p className="text-sm text-muted-foreground mt-2">Zəhmət olmasa bir az sonra yenidən cəhd edin.</p>
+              <p className="text-sm text-muted-foreground mt-2">Zəhmət olmasa bir az sonra yenidən cəhd edin. nəticələr görsənmir</p>
             </Card>
           ) : !rankings || rankings.length === 0 ? (
             <Card className="border-dashed border-4 py-24 flex flex-col items-center justify-center text-muted-foreground bg-transparent rounded-[3rem]">
