@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Image as ImageIcon } from 'lucide-react';
+import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -125,21 +125,30 @@ export default function AdminDashboard() {
           const examRef = doc(firestore, 'exams', attemptData.examId);
           const examSnap = await getDoc(examRef);
           let earnedPoints = 0;
-          let maxPoints = 10;
+          let maxPoints = 0;
 
           if (examSnap.exists()) {
              const examData = examSnap.data();
-             maxPoints = examData.questions?.length || 10;
-             examData.questions?.forEach((q: any) => {
+             const questions = examData.questions || [];
+             maxPoints = questions.length;
+
+             questions.forEach((q: any) => {
                const ans = attemptData.answers?.[q.id];
                if (!ans) return;
                
                if (q.id === selectedAppeal.questionId) {
+                 // Current question being appealed
                  earnedPoints += awardedScore;
-               } else if (q.type === 'mcq' || q.type === 'open') {
-                 if (ans.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase()) earnedPoints += 1;
-               } else if (q.type === 'explanation') {
-                 earnedPoints += (currentResults[q.id]?.score || 0);
+               } else {
+                 // Other questions - check if there's already a result
+                 const existingRes = updatedResults[q.id];
+                 if (existingRes && typeof existingRes.score === 'number') {
+                   earnedPoints += existingRes.score;
+                 } else if (q.type === 'mcq' || q.type === 'open') {
+                   if (ans.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase()) {
+                     earnedPoints += 1;
+                   }
+                 }
                }
              });
           }
