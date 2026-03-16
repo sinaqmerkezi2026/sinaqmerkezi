@@ -137,7 +137,7 @@ export default function AdminDashboard() {
                if (!ans) return;
                
                if (q.id === selectedAppeal.questionId) {
-                 // Current question being appealed
+                 // Current question being appealed - use new score
                  earnedPoints += awardedScore;
                } else {
                  // Other questions - check if there's already a result
@@ -448,7 +448,7 @@ export default function AdminDashboard() {
                     {selectedAppeal?.status === 'approved' && (
                       <div className="inline-flex items-center gap-2 text-lime-500 font-black bg-lime-500/10 px-6 py-2 rounded-full mt-2">
                         <Check className="w-4 h-4" />
-                        Verilən bal: +{selectedAppeal?.awardedScore === 1 ? '1' : selectedAppeal?.awardedScore?.toFixed(2)}
+                        Verilən bal: +{selectedAppeal?.awardedScore?.toFixed(2)}
                       </div>
                     )}
                   </div>

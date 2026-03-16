@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy, MessageSquarePlus, Clock } from 'lucide-react';
 import { gradeExplanationQuestion } from '@/ai/flows/grade-explanation-question-flow';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { doc, getDoc, updateDoc, collection, setDoc, query, where } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -22,22 +22,40 @@ export default function Results() {
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const [exam, setExam] = useState<any>(null);
-  const [attempt, setAttempt] = useState<any>(null);
-  const [aiFeedbacks, setAiFeedbacks] = useState<Record<string, { score: number, feedback: string }>>({});
   const [isGrading, setIsGrading] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
   const [appealReason, setAppealReason] = useState("");
   const [isSubmittingAppeal, setIsSubmittingAppeal] = useState(false);
 
+  // 1. Get Access Code Doc
+  const cleanCode = code?.toString().trim().toUpperCase();
+  const codeRef = useMemoFirebase(() => 
+    cleanCode ? doc(firestore, 'accessCodes', cleanCode) : null,
+    [firestore, cleanCode]
+  );
+  const { data: codeData, isLoading: isCodeLoading } = useDoc(codeRef);
+
+  // 2. Get Attempt Doc
+  const attemptRef = useMemoFirebase(() => 
+    codeData?.studentAttemptId ? doc(firestore, 'studentAttempts', codeData.studentAttemptId) : null,
+    [firestore, codeData?.studentAttemptId]
+  );
+  const { data: attempt, isLoading: isAttemptLoading } = useDoc(attemptRef);
+
+  // 3. Get Exam Doc
+  const examRef = useMemoFirebase(() => 
+    attempt?.examId ? doc(firestore, 'exams', attempt.examId) : null,
+    [firestore, attempt?.examId]
+  );
+  const { data: exam, isLoading: isExamLoading } = useDoc(examRef);
+
+  // 4. Get Appeals for real-time status
   const appealsQuery = useMemoFirebase(() => 
     attempt?.id ? query(collection(firestore, 'appeals'), where('attemptId', '==', attempt.id)) : null,
     [firestore, attempt?.id]
   );
   const { data: appeals } = useCollection(appealsQuery);
 
-  const calculatePoints = useCallback((e: any, a: any, feedbacks: any) => {
+  const calculatePoints = (e: any, a: any, feedbacks: any) => {
     let earnedPoints = 0;
     const questions = e.questions || [];
     
@@ -57,62 +75,10 @@ export default function Results() {
     });
     
     return earnedPoints;
-  }, []);
-
-  useEffect(() => {
-    async function fetchData() {
-      const cleanCode = code?.toString().trim().toUpperCase();
-      if (!cleanCode) return;
-      
-      setIsLoading(true);
-      try {
-        const codeRef = doc(firestore, 'accessCodes', cleanCode);
-        const codeSnap = await getDoc(codeRef);
-
-        if (!codeSnap.exists()) {
-          toast({ title: 'Xəta', description: 'Kod tapılmadı.', variant: 'destructive' });
-          router.push('/');
-          return;
-        }
-
-        const codeData = codeSnap.data();
-        if (!codeData.studentAttemptId) {
-          router.push('/');
-          return;
-        }
-
-        const [examDoc, attemptDoc] = await Promise.all([
-          getDoc(doc(firestore, 'exams', codeData.examId)),
-          getDoc(doc(firestore, 'studentAttempts', codeData.studentAttemptId))
-        ]);
-
-        if (!examDoc.exists() || !attemptDoc.exists()) {
-          router.push('/');
-          return;
-        }
-
-        const examData = examDoc.data();
-        const attemptData = attemptDoc.data();
-
-        setExam(examData);
-        setAttempt(attemptData);
-
-        if (attemptData.results) {
-          setAiFeedbacks(attemptData.results);
-        } else {
-          await gradeExplanations(examData, attemptData);
-        }
-      } catch (error) {
-        console.error("Error fetching results:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [code, firestore, router, toast]);
+  };
 
   const gradeExplanations = async (e: any, a: any) => {
+    if (isGrading) return;
     setIsGrading(true);
     const feedbacks: Record<string, any> = {};
     
@@ -141,7 +107,6 @@ export default function Results() {
       }
     }
     
-    setAiFeedbacks(feedbacks);
     const earnedPoints = calculatePoints(e, a, feedbacks);
     const maxPoints = e.questions?.length || 0;
     const totalScore = maxPoints > 0 ? (earnedPoints / maxPoints) * 100 : 0;
@@ -154,13 +119,19 @@ export default function Results() {
         earnedPoints: earnedPoints,
         maxPoints: maxPoints
       });
-      setAttempt((prev: any) => ({ ...prev, earnedPoints, maxPoints, totalScore }));
     } catch (err) {
       console.error("Failed to save AI results:", err);
     }
     
     setIsGrading(false);
   };
+
+  // Run initial grading if needed
+  useEffect(() => {
+    if (exam && attempt && !attempt.results && !isGrading) {
+      gradeExplanations(exam, attempt);
+    }
+  }, [exam, attempt, isGrading]);
 
   const handleAppeal = async (questionId: string) => {
     if (!appealReason.trim()) {
@@ -192,7 +163,7 @@ export default function Results() {
     }
   };
 
-  if (isLoading) {
+  if (isCodeLoading || isAttemptLoading || isExamLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-6">
@@ -203,8 +174,18 @@ export default function Results() {
     );
   }
 
-  if (!exam || !attempt) return null;
+  if (!exam || !attempt) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-black">Nəticə tapılmadı</h2>
+          <Button onClick={() => router.push('/')}>Ana Səhifəyə Qayıt</Button>
+        </div>
+      </div>
+    );
+  }
 
+  const aiFeedbacks = attempt.results || {};
   const earnedPoints = attempt.earnedPoints ?? calculatePoints(exam, attempt, aiFeedbacks);
   const maxPoints = exam.questions?.length || 0;
 
@@ -218,7 +199,7 @@ export default function Results() {
           </Button>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button variant="outline" className="rounded-xl font-bold bg-card shadow-sm border-border/50">
+            <Button variant="outline" className="rounded-xl font-bold bg-card shadow-sm border-border/50" onClick={() => window.print()}>
               <Share2 className="w-5 h-5 mr-2" />
               Paylaş
             </Button>
@@ -230,7 +211,7 @@ export default function Results() {
             <Trophy className="w-64 h-64 text-white" />
           </div>
           <CardContent className="relative z-10 py-20 flex flex-col items-center">
-            <div className="bg-white/10 p-8 rounded-[2rem] backdrop-blur-md mb-8 shadow-2xl border border-white/20 animate-pulse">
+            <div className="bg-white/10 p-8 rounded-[2rem] backdrop-blur-md mb-8 shadow-2xl border border-white/20">
               <Award className="w-20 h-20 text-white" />
             </div>
             <CardTitle className="text-5xl font-black mb-4 drop-shadow-md text-white">İmtahan Bitdi!</CardTitle>
@@ -240,9 +221,9 @@ export default function Results() {
             
             <div className="flex flex-col items-center">
               <div className="relative group">
-                <div className="absolute -inset-4 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all"></div>
-                <div className="relative text-[10rem] font-black leading-none flex items-center text-white">
-                  {earnedPoints.toFixed(earnedPoints % 1 === 0 ? 0 : 1)}
+                <div className="absolute -inset-4 bg-white/10 rounded-full blur-3xl"></div>
+                <div className="relative text-[10rem] font-black leading-none flex items-center text-white tabular-nums">
+                  {earnedPoints.toFixed(earnedPoints % 1 === 0 ? 0 : 2)}
                   <span className="text-4xl font-bold mx-4 opacity-40">/</span>
                   <span className="text-7xl font-bold opacity-60">{maxPoints}</span>
                 </div>
@@ -299,7 +280,7 @@ export default function Results() {
                           {existingAppeal ? (
                             <div className="flex items-center gap-2">
                               <Badge variant={existingAppeal.status === 'approved' ? 'default' : existingAppeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-lg py-1 px-3">
-                                {existingAppeal.status === 'pending' ? 'Apelyasiya gözləmədə' : existingAppeal.status === 'approved' ? 'Təsdiqləndi' : 'Rədd edildi'}
+                                {existingAppeal.status === 'pending' ? 'Apelyasiya gözləmədə' : existingAppeal.status === 'approved' ? `Təsdiqləndi (+${existingAppeal.awardedScore})` : 'Rədd edildi'}
                               </Badge>
                             </div>
                           ) : (
