@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, limit } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Medal, ArrowLeft, Loader2, GraduationCap, Crown } from 'lucide-react';
+import { Trophy, Medal, ArrowLeft, Loader2, GraduationCap, Crown, Target } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -16,19 +17,17 @@ export default function RankingPage() {
   const router = useRouter();
   const firestore = useFirestore();
 
-  // Mürəkkəb indeks tələb olunmaması üçün sadə sorğu istifadə edirik
   const rankingQuery = useMemoFirebase(() => {
     return query(collection(firestore, 'studentAttempts'), limit(100));
   }, [firestore]);
 
   const { data: rawAttempts, isLoading, error } = useCollection(rankingQuery);
 
-  // Məlumatları müştəri tərəfində filtrləyib sıralayırıq (Index xətalarından qaçmaq üçün)
   const rankings = useMemo(() => {
     if (!rawAttempts) return [];
     return rawAttempts
-      .filter((a: any) => a.isCompleted === true && typeof a.totalScore === 'number')
-      .sort((a: any, b: any) => (b.totalScore || 0) - (a.totalScore || 0))
+      .filter((a: any) => a.isCompleted === true && (typeof a.totalScore === 'number' || typeof a.earnedPoints === 'number'))
+      .sort((a: any, b: any) => (b.earnedPoints || b.totalScore || 0) - (a.earnedPoints || a.totalScore || 0))
       .slice(0, 50);
   }, [rawAttempts]);
 
@@ -72,7 +71,7 @@ export default function RankingPage() {
           {error ? (
             <Card className="p-12 text-center border-destructive/20 bg-destructive/5 rounded-[2rem]">
               <p className="text-destructive font-bold text-lg">Məlumatları yükləyərkən xəta baş verdi.</p>
-              <p className="text-sm text-muted-foreground mt-2">Sistem tənzimlənir, zəhmət olmasa bir az sonra yenidən cəhd edin.</p>
+              <p className="text-sm text-muted-foreground mt-2">Zəhmət olmasa bir az sonra yenidən cəhd edin. nəticələr görsənmir</p>
             </Card>
           ) : !rankings || rankings.length === 0 ? (
             <Card className="border-dashed border-4 py-24 flex flex-col items-center justify-center text-muted-foreground bg-transparent rounded-[3rem]">
@@ -87,6 +86,9 @@ export default function RankingPage() {
                 const isTop2 = index === 1;
                 const isTop3 = index === 2;
                 const isTopThree = isTop1 || isTop2 || isTop3;
+
+                const earned = attempt.earnedPoints || ((attempt.totalScore / 100) * (attempt.maxPoints || 10));
+                const max = attempt.maxPoints || 10;
 
                 return (
                   <Card 
@@ -137,13 +139,15 @@ export default function RankingPage() {
 
                       <div className="text-right flex flex-col items-end gap-1">
                         <div className={cn(
-                          "text-3xl font-black tabular-nums",
+                          "text-3xl font-black tabular-nums flex items-baseline gap-1",
                           isTop1 ? "text-yellow-500" : isTopThree ? "text-primary" : "text-foreground"
                         )}>
-                          {Math.round(attempt.totalScore || 0)}%
+                          {earned.toFixed(earned % 1 === 0 ? 0 : 1)}
+                          <span className="text-sm opacity-30">/ {max}</span>
                         </div>
-                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-black">
-                          {attempt.totalScore >= 90 ? 'Əla' : attempt.totalScore >= 70 ? 'Yaxşı' : 'Kafi'}
+                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-black flex gap-1">
+                          <Target className="w-3 h-3" />
+                          {earned >= (max * 0.9) ? 'Əla' : earned >= (max * 0.7) ? 'Yaxşı' : 'Kafi'}
                         </Badge>
                       </div>
                     </CardContent>

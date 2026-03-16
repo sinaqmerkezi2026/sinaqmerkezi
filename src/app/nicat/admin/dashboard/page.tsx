@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -78,7 +79,33 @@ export default function AdminDashboard() {
             }
           };
 
-          await updateDoc(attemptRef, { results: updatedResults });
+          // Re-calculate points
+          const examRef = doc(firestore, 'exams', attemptData.examId);
+          const examSnap = await getDoc(examRef);
+          let earnedPoints = 0;
+          if (examSnap.exists()) {
+             const examData = examSnap.data();
+             examData.questions?.forEach((q: any) => {
+               const ans = attemptData.answers?.[q.id];
+               if (!ans) return;
+               if (q.id === selectedAppeal.questionId) {
+                 earnedPoints += awardedScore;
+               } else if (q.type === 'mcq' || q.type === 'open') {
+                 if (ans.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase()) earnedPoints += 1;
+               } else if (q.type === 'explanation') {
+                 earnedPoints += (currentResults[q.id]?.score || 0);
+               }
+             });
+          }
+
+          const maxPoints = attemptData.maxPoints || 10;
+          const totalScore = maxPoints > 0 ? (earnedPoints / maxPoints) * 100 : 0;
+
+          await updateDoc(attemptRef, { 
+            results: updatedResults,
+            earnedPoints: earnedPoints,
+            totalScore: totalScore
+          });
         }
       }
 
@@ -185,7 +212,7 @@ export default function AdminDashboard() {
                 <div className="p-8 space-y-4">
                   {!appeals || appeals.length === 0 ? (
                     <div className="text-center py-24 opacity-20 flex flex-col items-center gap-6">
-                      <MessageSquare className="w-20 h-20" />
+                      <MessageSquarePlus className="w-20 h-20" />
                       <p className="text-2xl font-black">Hələ heç bir apelyasiya müraciəti yoxdur.</p>
                     </div>
                   ) : (
@@ -254,21 +281,21 @@ export default function AdminDashboard() {
                       +1
                     </Button>
                     <Button 
-                      className="bg-green-500 hover:bg-green-600 font-black h-14 rounded-2xl text-white shadow-lg" 
+                      className="bg-lime-500 hover:bg-lime-600 font-black h-14 rounded-2xl text-white shadow-lg" 
                       onClick={() => handleAppealDecision('approved', 2/3)}
                       disabled={isProcessingAppeal}
                     >
                       +2/3
                     </Button>
                     <Button 
-                      className="bg-green-400 hover:bg-green-500 font-black h-14 rounded-2xl text-white shadow-lg" 
+                      className="bg-lime-400 hover:bg-lime-500 font-black h-14 rounded-2xl text-white shadow-lg" 
                       onClick={() => handleAppealDecision('approved', 1/2)}
                       disabled={isProcessingAppeal}
                     >
                       +1/2
                     </Button>
                     <Button 
-                      className="bg-green-300 hover:bg-green-400 font-black h-14 rounded-2xl text-white shadow-lg" 
+                      className="bg-lime-300 hover:bg-lime-400 font-black h-14 rounded-2xl text-white shadow-lg" 
                       onClick={() => handleAppealDecision('approved', 1/3)}
                       disabled={isProcessingAppeal}
                     >
@@ -291,7 +318,7 @@ export default function AdminDashboard() {
                     {selectedAppeal.adminComment || "Rəy bildirilməyib."}
                   </div>
                   {selectedAppeal.status === 'approved' && (
-                    <div className="inline-flex items-center gap-2 text-green-500 font-black bg-green-500/10 px-6 py-2 rounded-full mt-2">
+                    <div className="inline-flex items-center gap-2 text-lime-500 font-black bg-lime-500/10 px-6 py-2 rounded-full mt-2">
                       <Check className="w-4 h-4" />
                       Verilən bal: +{selectedAppeal.awardedScore === 1 ? '1' : selectedAppeal.awardedScore.toFixed(2)}
                     </div>

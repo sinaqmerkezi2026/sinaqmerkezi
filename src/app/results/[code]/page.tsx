@@ -37,7 +37,7 @@ export default function Results() {
   );
   const { data: appeals } = useCollection(appealsQuery);
 
-  const calculateTotalScore = useCallback((e: any, a: any, feedbacks: any) => {
+  const calculatePoints = useCallback((e: any, a: any, feedbacks: any) => {
     let earnedPoints = 0;
     const questions = e.questions || [];
     
@@ -56,7 +56,7 @@ export default function Results() {
       }
     });
     
-    return questions.length > 0 ? (earnedPoints / questions.length) * 100 : 0;
+    return earnedPoints;
   }, []);
 
   useEffect(() => {
@@ -142,14 +142,19 @@ export default function Results() {
     }
     
     setAiFeedbacks(feedbacks);
-    const score = calculateTotalScore(e, a, feedbacks);
+    const earnedPoints = calculatePoints(e, a, feedbacks);
+    const maxPoints = e.questions?.length || 0;
+    const totalScore = maxPoints > 0 ? (earnedPoints / maxPoints) * 100 : 0;
     
     try {
       const attemptRef = doc(firestore, 'studentAttempts', a.id);
       await updateDoc(attemptRef, { 
         results: feedbacks,
-        totalScore: score 
+        totalScore: totalScore,
+        earnedPoints: earnedPoints,
+        maxPoints: maxPoints
       });
+      setAttempt((prev: any) => ({ ...prev, earnedPoints, maxPoints, totalScore }));
     } catch (err) {
       console.error("Failed to save AI results:", err);
     }
@@ -200,7 +205,8 @@ export default function Results() {
 
   if (!exam || !attempt) return null;
 
-  const totalScore = attempt.totalScore !== undefined ? attempt.totalScore : calculateTotalScore(exam, attempt, aiFeedbacks);
+  const earnedPoints = attempt.earnedPoints ?? calculatePoints(exam, attempt, aiFeedbacks);
+  const maxPoints = exam.questions?.length || 0;
 
   return (
     <div className="min-h-screen bg-background p-6 font-body">
@@ -235,13 +241,14 @@ export default function Results() {
             <div className="flex flex-col items-center">
               <div className="relative group">
                 <div className="absolute -inset-4 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all"></div>
-                <div className="relative text-[10rem] font-black leading-none flex items-start text-white">
-                  {Math.round(totalScore)}
-                  <span className="text-4xl font-bold mt-10 opacity-60">%</span>
+                <div className="relative text-[10rem] font-black leading-none flex items-center text-white">
+                  {earnedPoints.toFixed(earnedPoints % 1 === 0 ? 0 : 1)}
+                  <span className="text-4xl font-bold mx-4 opacity-40">/</span>
+                  <span className="text-7xl font-bold opacity-60">{maxPoints}</span>
                 </div>
               </div>
               <div className="mt-4 text-sm uppercase tracking-[0.5em] font-black bg-white/10 px-8 py-2 rounded-full border border-white/20 text-white">
-                Ümumi Göstərici
+                Ümumi Bal Hesabı
               </div>
             </div>
           </CardContent>
@@ -256,7 +263,10 @@ export default function Results() {
             <div className="space-y-4">
               {(exam.questions || []).map((q: any, i: number) => {
                 const ans = attempt.answers?.[q.id];
-                const isCorrect = ans?.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase();
+                const studentFinal = ans?.finalAnswer?.trim().toLowerCase();
+                const correctFinal = q.correctAnswer?.trim().toLowerCase();
+                const isCorrect = studentFinal === correctFinal;
+                const score = q.type === 'explanation' ? (aiFeedbacks[q.id]?.score || 0) : (isCorrect ? 1 : 0);
                 const existingAppeal = appeals?.find(a => a.questionId === q.id);
 
                 return (
@@ -266,7 +276,9 @@ export default function Results() {
                         <div className="flex items-center gap-5">
                           <div className={cn(
                             "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm",
-                            (q.type === 'explanation' ? (aiFeedbacks[q.id]?.score || 0) > 0 : isCorrect) ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                            score === 1 ? "bg-green-500/10 text-green-500" : 
+                            score > 0 ? "bg-lime-500/10 text-lime-500" : 
+                            "bg-red-500/10 text-red-500"
                           )}>
                             {i + 1}
                           </div>
@@ -276,16 +288,9 @@ export default function Results() {
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          {q.type === 'explanation' ? (
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm px-4 py-1.5 bg-primary/20 text-primary font-black rounded-xl">
-                                AI: {aiFeedbacks[q.id]?.score !== undefined ? `${(aiFeedbacks[q.id].score * 100).toFixed(0)}%` : '...'}
-                              </span>
-                              {isCorrect ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <XCircle className="w-6 h-6 text-orange-500" />}
-                            </div>
-                          ) : (
-                            isCorrect ? <CheckCircle2 className="w-8 h-8 text-green-500" /> : <XCircle className="w-8 h-8 text-red-500" />
-                          )}
+                          {score === 1 ? <CheckCircle2 className="w-8 h-8 text-green-500" /> : 
+                           score > 0 ? <CheckCircle2 className="w-8 h-8 text-lime-500" /> : 
+                           <XCircle className="w-8 h-8 text-red-500" />}
                         </div>
                       </div>
 
@@ -296,23 +301,6 @@ export default function Results() {
                               <Badge variant={existingAppeal.status === 'approved' ? 'default' : existingAppeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-lg py-1 px-3">
                                 {existingAppeal.status === 'pending' ? 'Apelyasiya gözləmədə' : existingAppeal.status === 'approved' ? 'Təsdiqləndi' : 'Rədd edildi'}
                               </Badge>
-                              {existingAppeal.adminComment && (
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
-                                      <Clock className="w-4 h-4 text-muted-foreground" />
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent>
-                                    <DialogHeader>
-                                      <DialogTitle>Admin Rəyi</DialogTitle>
-                                    </DialogHeader>
-                                    <div className="p-4 bg-muted/30 rounded-xl italic">
-                                      "{existingAppeal.adminComment}"
-                                    </div>
-                                  </DialogContent>
-                                </Dialog>
-                              )}
                             </div>
                           ) : (
                             <Dialog>
@@ -382,9 +370,14 @@ export default function Results() {
                       <CardHeader className="p-8 border-b border-border/50 bg-muted/20">
                         <div className="flex justify-between items-start gap-6">
                           <p className="font-black text-xl text-foreground leading-tight pr-10">{q.text}</p>
-                          <div className="bg-card px-6 py-3 rounded-2xl shadow-lg border border-primary/20">
-                            <span className="text-2xl font-black text-primary">
-                              {aiFeedbacks[q.id]?.score !== undefined ? (aiFeedbacks[q.id].score * 100).toFixed(0) : 0}%
+                          <div className={cn(
+                            "px-6 py-3 rounded-2xl shadow-lg border",
+                            (aiFeedbacks[q.id]?.score || 0) === 1 ? "bg-green-500/10 border-green-500/20 text-green-500" :
+                            (aiFeedbacks[q.id]?.score || 0) > 0 ? "bg-lime-500/10 border-lime-500/20 text-lime-500" :
+                            "bg-red-500/10 border-red-500/20 text-red-500"
+                          )}>
+                            <span className="text-2xl font-black">
+                              {aiFeedbacks[q.id]?.score !== undefined ? aiFeedbacks[q.id].score.toFixed(2) : 0} Bal
                             </span>
                           </div>
                         </div>
