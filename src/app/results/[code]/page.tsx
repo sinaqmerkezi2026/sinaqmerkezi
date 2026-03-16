@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,12 +31,33 @@ export default function Results() {
   const [appealReason, setAppealReason] = useState("");
   const [isSubmittingAppeal, setIsSubmittingAppeal] = useState(false);
 
-  // Fetch appeals for this attempt to show status
   const appealsQuery = useMemoFirebase(() => 
     attempt?.id ? query(collection(firestore, 'appeals'), where('attemptId', '==', attempt.id)) : null,
     [firestore, attempt?.id]
   );
   const { data: appeals } = useCollection(appealsQuery);
+
+  const calculateTotalScore = useCallback((e: any, a: any, feedbacks: any) => {
+    let earnedPoints = 0;
+    const questions = e.questions || [];
+    
+    questions.forEach((q: any) => {
+      const ans = a.answers?.[q.id];
+      if (!ans) return;
+
+      const studentFinal = ans.finalAnswer?.trim().toLowerCase();
+      const correctFinal = q.correctAnswer?.trim().toLowerCase();
+
+      if (q.type === 'mcq' || q.type === 'open') {
+        if (studentFinal === correctFinal) earnedPoints += 1;
+      } else if (q.type === 'explanation') {
+        const aiResult = feedbacks[q.id];
+        if (aiResult) earnedPoints += aiResult.score;
+      }
+    });
+    
+    return questions.length > 0 ? (earnedPoints / questions.length) * 100 : 0;
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -121,10 +142,14 @@ export default function Results() {
     }
     
     setAiFeedbacks(feedbacks);
+    const score = calculateTotalScore(e, a, feedbacks);
     
     try {
       const attemptRef = doc(firestore, 'studentAttempts', a.id);
-      await updateDoc(attemptRef, { results: feedbacks });
+      await updateDoc(attemptRef, { 
+        results: feedbacks,
+        totalScore: score 
+      });
     } catch (err) {
       console.error("Failed to save AI results:", err);
     }
@@ -175,29 +200,7 @@ export default function Results() {
 
   if (!exam || !attempt) return null;
 
-  const calculateTotalScore = () => {
-    let earnedPoints = 0;
-    const questions = exam.questions || [];
-    
-    questions.forEach((q: any) => {
-      const ans = attempt.answers?.[q.id];
-      if (!ans) return;
-
-      const studentFinal = ans.finalAnswer?.trim().toLowerCase();
-      const correctFinal = q.correctAnswer?.trim().toLowerCase();
-
-      if (q.type === 'mcq' || q.type === 'open') {
-        if (studentFinal === correctFinal) earnedPoints += 1;
-      } else if (q.type === 'explanation') {
-        const aiResult = aiFeedbacks[q.id];
-        if (aiResult) earnedPoints += aiResult.score;
-      }
-    });
-    
-    return questions.length > 0 ? (earnedPoints / questions.length) * 100 : 0;
-  }
-
-  const totalScore = calculateTotalScore();
+  const totalScore = attempt.totalScore !== undefined ? attempt.totalScore : calculateTotalScore(exam, attempt, aiFeedbacks);
 
   return (
     <div className="min-h-screen bg-background p-6 font-body">
@@ -286,7 +289,6 @@ export default function Results() {
                         </div>
                       </div>
 
-                      {/* Appeal Section for Open and Explanation Questions */}
                       {(q.type === 'open' || q.type === 'explanation') && (
                         <div className="flex justify-end pt-2 border-t border-border/50">
                           {existingAppeal ? (

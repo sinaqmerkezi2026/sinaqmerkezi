@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send } from 'lucide-react';
+import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query } from 'firebase/firestore';
 import {
@@ -100,7 +100,6 @@ export default function StudentEntry() {
   };
 
   const handleBuyByTelegram = (exam: any) => {
-    // DİQQƏT: Nömrənin görsənməməsi üçün bura öz Telegram Username-inizi yazın (məsələn: SinaqMerkeziAdmin)
     const telegramUsername = "SinaqMerkeziAdmin"; 
     const message = encodeURIComponent(`Salam, mən "${exam.name}" imtahanı üçün giriş kodu almaq istəyirəm. Qiymət: ${exam.price} AZN.`);
     const url = `https://t.me/${telegramUsername}?text=${message}`;
@@ -117,7 +116,17 @@ export default function StudentEntry() {
           <GraduationCap className="w-8 h-8 text-primary" />
           <span className="font-black text-xl tracking-tight text-foreground">Sınaq<span className="text-primary">Mərkəzi</span></span>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            className="font-bold gap-2 text-primary hover:bg-primary/10 rounded-xl"
+            onClick={() => router.push('/ranking')}
+          >
+            <Trophy className="w-5 h-5" />
+            Liderlər
+          </Button>
+          <ThemeToggle />
+        </div>
       </header>
 
       <div className="w-full max-w-6xl mt-4 space-y-16 relative z-10">
