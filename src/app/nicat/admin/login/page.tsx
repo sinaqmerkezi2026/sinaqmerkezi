@@ -18,7 +18,7 @@ export default function AdminLogin() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === 'Nicat_2010') {
-      sessionStorage.setItem('admin_auth', 'true');
+      localStorage.setItem('admin_auth', 'true');
       toast({ title: 'Xoş gəldiniz', description: 'İdarəetmə panelinə yönləndirilirsiniz...' });
       router.push('/nicat/admin/dashboard');
     } else {

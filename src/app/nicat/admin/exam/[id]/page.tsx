@@ -46,6 +46,7 @@ export default function ExamEditor() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [examState, setExamState] = useState<Partial<Exam>>({
@@ -72,10 +73,12 @@ export default function ExamEditor() {
   const usedCodes = (dbCodes || []).filter(c => c.isUsedForEntry);
 
   useEffect(() => {
-    if (sessionStorage.getItem('admin_auth') !== 'true') {
+    if (localStorage.getItem('admin_auth') !== 'true') {
       router.push('/nicat/admin/login');
-      return;
+    } else {
+      setIsAuthenticated(true);
     }
+    
     if (existingExam) {
       setExamState(existingExam);
     }
@@ -140,6 +143,8 @@ export default function ExamEditor() {
     toast({ title: 'Uğurlu', description: 'İmtahan və kodlar bazaya yazıldı.' });
     router.push('/nicat/admin/dashboard');
   };
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-background pb-20 font-body">

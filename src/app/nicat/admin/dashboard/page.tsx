@@ -21,6 +21,15 @@ export default function AdminDashboard() {
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem('admin_auth') !== 'true') {
+      router.push('/nicat/admin/login');
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
 
   const examsQuery = useMemoFirebase(() => {
     return query(collection(firestore, 'exams'), orderBy('name'));
@@ -38,13 +47,6 @@ export default function AdminDashboard() {
   const [adminComment, setAdminComment] = useState("");
   const [isProcessingAppeal, setIsProcessingAppeal] = useState(false);
   const [isContextLoading, setIsContextLoading] = useState(false);
-
-  useEffect(() => {
-    if (sessionStorage.getItem('admin_auth') !== 'true') {
-      router.push('/nicat/admin/login');
-      return;
-    }
-  }, [router]);
 
   useEffect(() => {
     async function fetchAppealContext() {
@@ -165,6 +167,8 @@ export default function AdminDashboard() {
       setIsProcessingAppeal(false);
     }
   };
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-background">
