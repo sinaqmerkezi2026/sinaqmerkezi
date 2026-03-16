@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy } from 'lucide-react';
+import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy, Heart } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query } from 'firebase/firestore';
 import {
@@ -106,6 +106,13 @@ export default function StudentEntry() {
     window.open(url, '_blank');
   };
 
+  const handleSupport = () => {
+    const telegramUsername = "SinaqMerkeziAdmin";
+    const message = encodeURIComponent("Sizə dəstək olmaq istəyirəm");
+    const url = `https://t.me/${telegramUsername}?text=${message}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center p-6 relative overflow-hidden space-y-12">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
@@ -116,14 +123,22 @@ export default function StudentEntry() {
           <GraduationCap className="w-8 h-8 text-primary" />
           <span className="font-black text-xl tracking-tight text-foreground">Sınaq<span className="text-primary">Mərkəzi</span></span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button 
+            variant="ghost" 
+            className="font-bold gap-2 text-red-500 hover:bg-red-500/10 rounded-xl"
+            onClick={handleSupport}
+          >
+            <Heart className="w-5 h-5 fill-current" />
+            <span className="hidden sm:inline">Dəstək</span>
+          </Button>
           <Button 
             variant="ghost" 
             className="font-bold gap-2 text-primary hover:bg-primary/10 rounded-xl"
             onClick={() => router.push('/ranking')}
           >
             <Trophy className="w-5 h-5" />
-            Liderlər
+            <span className="hidden sm:inline">Liderlər</span>
           </Button>
           <ThemeToggle />
         </div>
