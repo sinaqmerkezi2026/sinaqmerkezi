@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -150,9 +149,6 @@ export default function StudentEntry() {
 
       <div className="w-full max-w-6xl mt-12 space-y-20 relative z-10 flex-1">
         <div className="text-center space-y-6">
-          <Badge variant="outline" className="px-4 py-1.5 rounded-full bg-primary/10 text-primary border-primary/20 font-black animate-bounce shadow-xl">
-            🎉 YENİ İMTAHANLAR ƏLAVƏ EDİLDİ
-          </Badge>
           <div className="space-y-4">
             <h1 className="text-6xl md:text-8xl font-black tracking-tight text-foreground leading-[0.9]">
               Biliyini<br /><span className="text-primary relative inline-block">Yoxla
@@ -305,7 +301,7 @@ export default function StudentEntry() {
       
       <footer className="w-full max-w-6xl py-12 flex flex-col md:flex-row justify-between items-center gap-6 z-10 border-t border-white/5 opacity-40 hover:opacity-100 transition-opacity">
         <p className="font-black text-sm tracking-widest uppercase">
-          &copy; {new Date().getFullYear()} Sınaq Mərkəzi. <span className="text-primary">Bəxtiniz Gətirsin!</span>
+          &copy; {new Date().getFullYear()} Sınaq Mərkəzi.
         </p>
         <div className="flex gap-8 font-black text-[10px] uppercase tracking-widest">
           <a href="#" className="hover:text-primary transition-colors">Şərtlər</a>
