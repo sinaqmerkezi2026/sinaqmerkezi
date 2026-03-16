@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
@@ -91,9 +90,10 @@ export default function Results() {
     const scoreRatio = earned / max;
     let discount = 0;
 
-    if (scoreRatio >= 0.85) discount = 30;
-    else if (scoreRatio >= 0.70) discount = 20;
-    else if (scoreRatio >= 0.50) discount = 10;
+    // Updated discount logic: 5%, 10%, 15%
+    if (scoreRatio >= 0.85) discount = 15;
+    else if (scoreRatio >= 0.70) discount = 10;
+    else if (scoreRatio >= 0.50) discount = 5;
 
     if (discount === 0) return;
 
