@@ -2,7 +2,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Auth tamamilə ləğv edildiyi üçün bütün kolleksiyalara hər kəs üçün tam icazə verilir
+    // Sınaq mərhələsində olduğumuz üçün bütün kolleksiyalara tam oxuma və yazma icazəsi verilir.
+    // Bu, həm daxil olan, həm də anonim istifadəçilər üçün keçərlidir.
     match /{document=**} {
       allow read, write: if true;
     }

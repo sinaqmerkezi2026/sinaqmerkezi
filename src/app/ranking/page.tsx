@@ -3,9 +3,9 @@
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Medal, ArrowLeft, Loader2, Star, GraduationCap, Crown } from 'lucide-react';
+import { Trophy, Medal, ArrowLeft, Loader2, GraduationCap, Crown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -16,16 +16,19 @@ export default function RankingPage() {
   const router = useRouter();
   const firestore = useFirestore();
 
+  // Reytinq sorğusunu optimallaşdırırıq. 
+  // Qeyd: totalScore sahəsi olmayan sənədlər siyahıya düşməyəcək.
   const rankingQuery = useMemoFirebase(() => {
+    const colRef = collection(firestore, 'studentAttempts');
     return query(
-      collection(firestore, 'studentAttempts'),
+      colRef,
       where('isCompleted', '==', true),
       orderBy('totalScore', 'desc'),
       limit(50)
     );
   }, [firestore]);
 
-  const { data: rankings, isLoading } = useCollection(rankingQuery);
+  const { data: rankings, isLoading, error } = useCollection(rankingQuery);
 
   if (isLoading) {
     return (
@@ -64,7 +67,12 @@ export default function RankingPage() {
         </div>
 
         <div className="space-y-6">
-          {!rankings || rankings.length === 0 ? (
+          {error ? (
+            <Card className="p-12 text-center border-destructive/20 bg-destructive/5 rounded-[2rem]">
+              <p className="text-destructive font-bold text-lg">Məlumatları yükləyərkən xəta baş verdi.</p>
+              <p className="text-sm text-muted-foreground mt-2">Zəhmət olmasa bir az sonra yenidən cəhd edin.</p>
+            </Card>
+          ) : !rankings || rankings.length === 0 ? (
             <Card className="border-dashed border-4 py-24 flex flex-col items-center justify-center text-muted-foreground bg-transparent rounded-[3rem]">
               <Trophy className="w-16 h-16 mb-4 opacity-10" />
               <p className="text-xl font-bold">Hələ heç bir nəticə yoxdur</p>
