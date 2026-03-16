@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy, MessageSquarePlus, Clock, ChevronDown, ListChecks } from 'lucide-react';
+import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy, MessageSquarePlus, Clock, ChevronDown, ListChecks, Gift, Ticket } from 'lucide-react';
 import { gradeExplanationQuestion } from '@/ai/flows/grade-explanation-question-flow';
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { doc, getDoc, updateDoc, collection, setDoc, query, where } from 'firebase/firestore';
@@ -25,6 +25,7 @@ export default function Results() {
   const [isGrading, setIsGrading] = useState(false);
   const [appealReason, setAppealReason] = useState("");
   const [isSubmittingAppeal, setIsSubmittingAppeal] = useState(false);
+  const [isGeneratingPromo, setIsGeneratingPromo] = useState(false);
 
   // Get Access Code Doc
   const cleanCode = code?.toString().trim().toUpperCase();
@@ -55,6 +56,14 @@ export default function Results() {
   );
   const { data: appeals } = useCollection(appealsQuery);
 
+  // Get Promo Code
+  const promoQuery = useMemoFirebase(() => 
+    attempt?.id ? query(collection(firestore, 'promoCodes'), where('attemptId', '==', attempt.id)) : null,
+    [firestore, attempt?.id]
+  );
+  const { data: promoData } = useCollection(promoQuery);
+  const existingPromo = promoData?.[0];
+
   const calculatePoints = (e: any, a: any, feedbacks: any) => {
     let earnedPoints = 0;
     const questions = e.questions || [];
@@ -76,6 +85,38 @@ export default function Results() {
     
     return earnedPoints;
   };
+
+  const generatePromoCode = useCallback(async (earned: number, max: number, aId: string, sName: string) => {
+    if (isGeneratingPromo || !firestore) return;
+    const scoreRatio = earned / max;
+    let discount = 0;
+
+    if (scoreRatio >= 0.85) discount = 30;
+    else if (scoreRatio >= 0.70) discount = 20;
+    else if (scoreRatio >= 0.50) discount = 10;
+
+    if (discount === 0) return;
+
+    setIsGeneratingPromo(true);
+    try {
+      const promoId = Math.random().toString(36).substr(2, 8).toUpperCase();
+      const promoRef = doc(firestore, 'promoCodes', promoId);
+      await setDoc(promoRef, {
+        id: promoId,
+        code: promoId,
+        discountPercent: discount,
+        attemptId: aId,
+        studentName: sName,
+        isUsed: false,
+        isActive: true,
+        createdAt: Date.now()
+      });
+    } catch (e) {
+      console.error("Promo creation error:", e);
+    } finally {
+      setIsGeneratingPromo(false);
+    }
+  }, [firestore, isGeneratingPromo]);
 
   const gradeExplanations = async (e: any, a: any) => {
     if (isGrading) return;
@@ -119,6 +160,9 @@ export default function Results() {
         earnedPoints: earnedPoints,
         maxPoints: maxPoints
       });
+
+      // Generate promo code after first grading
+      await generatePromoCode(earnedPoints, maxPoints, a.id, `${a.studentFirstName} ${a.studentLastName}`);
     } catch (err) {
       console.error("Failed to save AI results:", err);
     }
@@ -224,31 +268,58 @@ export default function Results() {
         </header>
 
         {/* Hero Score Card */}
-        <Card className="border-none shadow-[0_32px_64px_-15px_rgba(0,0,0,0.4)] bg-gradient-to-br from-primary via-primary/80 to-blue-700 text-white rounded-[4rem] overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 group-hover:rotate-0 transition-transform duration-1000">
-            <Trophy className="w-80 h-80 text-white" />
-          </div>
-          <CardContent className="relative z-10 py-20 flex flex-col items-center">
-            <div className="bg-white/10 p-8 rounded-[2.5rem] backdrop-blur-md mb-8 shadow-2xl border border-white/20 animate-bounce">
-              <Award className="w-20 h-20 text-white" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          <Card className="lg:col-span-8 border-none shadow-[0_32px_64px_-15px_rgba(0,0,0,0.4)] bg-gradient-to-br from-primary via-primary/80 to-blue-700 text-white rounded-[4rem] overflow-hidden relative group">
+            <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 group-hover:rotate-0 transition-transform duration-1000">
+              <Trophy className="w-80 h-80 text-white" />
             </div>
-            <CardTitle className="text-5xl font-black mb-4 drop-shadow-2xl text-white tracking-tight">İmtahan Tamamlandı!</CardTitle>
-            <CardDescription className="text-white/80 text-xl font-semibold mb-12 max-w-lg text-center leading-relaxed">
-              Əla iş! <span className="text-white font-black underline decoration-white/30 decoration-4 underline-offset-8">{attempt.studentFirstName} {attempt.studentLastName}</span>, nəticəniz artıq rəsmidir.
-            </CardDescription>
-            
-            <div className="flex flex-col items-center">
-              <div className="relative text-[10rem] font-black leading-none flex items-center text-white tabular-nums drop-shadow-[0_25px_50px_rgba(0,0,0,0.5)]">
-                {earnedPoints.toFixed(earnedPoints % 1 === 0 ? 0 : 2)}
-                <span className="text-4xl font-black mx-6 opacity-30">/</span>
-                <span className="text-6xl font-black opacity-50">{maxPoints}</span>
+            <CardContent className="relative z-10 py-16 flex flex-col items-center">
+              <div className="bg-white/10 p-6 rounded-[2rem] backdrop-blur-md mb-6 shadow-2xl border border-white/20 animate-bounce">
+                <Award className="w-16 h-16 text-white" />
               </div>
-              <div className="mt-8 text-xs uppercase tracking-[0.6em] font-black bg-white/10 px-10 py-3 rounded-full border border-white/20 text-white shadow-xl backdrop-blur-sm">
-                Yekun Bal Hesabı
+              <CardTitle className="text-4xl font-black mb-4 drop-shadow-2xl text-white tracking-tight text-center">İmtahan Tamamlandı!</CardTitle>
+              <CardDescription className="text-white/80 text-lg font-semibold mb-8 max-w-lg text-center leading-relaxed">
+                Əla iş! <span className="text-white font-black underline decoration-white/30 decoration-4 underline-offset-8">{attempt.studentFirstName} {attempt.studentLastName}</span>, nəticəniz rəsmidir.
+              </CardDescription>
+              
+              <div className="flex flex-col items-center">
+                <div className="relative text-[8rem] font-black leading-none flex items-center text-white tabular-nums drop-shadow-[0_25px_50px_rgba(0,0,0,0.5)]">
+                  {earnedPoints.toFixed(earnedPoints % 1 === 0 ? 0 : 2)}
+                  <span className="text-3xl font-black mx-4 opacity-30">/</span>
+                  <span className="text-5xl font-black opacity-50">{maxPoints}</span>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Promo Code Card */}
+          <Card className="lg:col-span-4 border-none shadow-2xl bg-card/40 backdrop-blur-3xl rounded-[4rem] overflow-hidden flex flex-col items-center justify-center p-8 text-center border-2 border-primary/20 relative group">
+            {existingPromo ? (
+              <>
+                <div className="bg-primary/10 p-6 rounded-[2rem] mb-6 group-hover:scale-110 transition-transform duration-500">
+                  <Gift className="w-12 h-12 text-primary" />
+                </div>
+                <h3 className="text-2xl font-black text-foreground mb-2">Sizə Hədiyyə!</h3>
+                <p className="text-muted-foreground text-sm font-bold mb-8">Nəticənizə görə növbəti imtahan üçün endirim qazandınız:</p>
+                <div className="bg-primary text-white font-black text-4xl px-8 py-4 rounded-3xl shadow-2xl animate-pulse mb-8 border-b-8 border-primary-foreground/20">
+                  {existingPromo.discountPercent}%
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">PROMO KOD:</span>
+                  <div className="font-mono text-2xl font-black text-primary bg-primary/5 px-6 py-2 rounded-xl border border-dashed border-primary/30">
+                    {existingPromo.code}
+                  </div>
+                </div>
+                <p className="mt-6 text-[10px] font-black text-primary/60 uppercase tracking-tighter">Adminə bu kodu bildirərək endirimdən yararlana bilərsiniz.</p>
+              </>
+            ) : (
+              <div className="opacity-40 flex flex-col items-center grayscale">
+                <Ticket className="w-16 h-16 mb-6" />
+                <p className="font-black text-sm">Növbəti imtahan üçün endirim qazanmaq üçün 50%-dən çox nəticə göstərin.</p>
+              </div>
+            )}
+          </Card>
+        </div>
 
         {/* Question Navigation Grid */}
         <div className="space-y-8">
@@ -346,7 +417,6 @@ export default function Results() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    {/* Student Answer */}
                     <div className="space-y-6">
                       <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
                         <ChevronDown className="w-4 h-4" />
@@ -369,7 +439,6 @@ export default function Results() {
                       )}
                     </div>
 
-                    {/* Correct Answer */}
                     <div className="space-y-6">
                       <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2">
                         <ChevronDown className="w-4 h-4" />
@@ -377,7 +446,7 @@ export default function Results() {
                       </h4>
                       <div className="p-8 rounded-[2.5rem] bg-primary/5 border-2 border-primary/20 text-primary font-black text-2xl shadow-inner flex items-center gap-6">
                         <CheckCircle2 className="w-8 h-8" />
-                        {correctFinal}
+                        {q.correctAnswer}
                       </div>
                       {q.type === 'explanation' && q.explanationCriterion && (
                         <div className="bg-primary/5 backdrop-blur-xl p-8 rounded-[2rem] text-lg font-medium text-primary/80 border border-primary/20 leading-relaxed shadow-lg">
@@ -388,7 +457,6 @@ export default function Results() {
                     </div>
                   </div>
 
-                  {/* AI Feedback Section */}
                   {q.type === 'explanation' && aiFeedbacks[q.id] && (
                     <div className="bg-primary/10 backdrop-blur-3xl p-10 rounded-[3rem] border-4 border-primary/20 shadow-2xl space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
                       <div className="flex items-center gap-4 text-primary">
@@ -403,7 +471,6 @@ export default function Results() {
                     </div>
                   )}
 
-                  {/* Appeal Action */}
                   {q.type === 'explanation' && (
                     <div className="flex justify-end pt-8 border-t border-white/5">
                       {existingAppeal ? (

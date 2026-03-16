@@ -46,6 +46,22 @@
         "processedAt": { "type": "number" }
       },
       "required": ["id", "attemptId", "questionId", "studentReason", "status", "createdAt"]
+    },
+    "PromoCode": {
+      "title": "PromoCode",
+      "type": "object",
+      "description": "A discount code generated for students based on performance.",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "discountPercent": { "type": "number" },
+        "attemptId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "isUsed": { "type": "boolean" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "code", "discountPercent", "attemptId", "isUsed", "isActive"]
     }
   },
   "auth": {
@@ -74,6 +90,14 @@
           "entityName": "Appeal",
           "schema": { "$ref": "#/backend/entities/Appeal" },
           "description": "Student appeals for question results."
+        }
+      },
+      {
+        "path": "promoCodes/{promoCodeId}",
+        "definition": {
+          "entityName": "PromoCode",
+          "schema": { "$ref": "#/backend/entities/PromoCode" },
+          "description": "Discount codes for students."
         }
       }
     ]
