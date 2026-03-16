@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info } from 'lucide-react';
+import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -34,8 +35,10 @@ export default function AdminDashboard() {
   const { data: appeals, isLoading: isAppealsLoading } = useCollection(appealsQuery);
 
   const [selectedAppeal, setSelectedAppeal] = useState<any>(null);
+  const [appealContext, setAppealContext] = useState<any>(null);
   const [adminComment, setAdminComment] = useState("");
   const [isProcessingAppeal, setIsProcessingAppeal] = useState(false);
+  const [isContextLoading, setIsContextLoading] = useState(false);
 
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') !== 'true') {
@@ -43,6 +46,46 @@ export default function AdminDashboard() {
       return;
     }
   }, [router]);
+
+  // Fetch context (Question and Student Answer) when an appeal is selected
+  useEffect(() => {
+    async function fetchAppealContext() {
+      if (!selectedAppeal) {
+        setAppealContext(null);
+        return;
+      }
+
+      setIsContextLoading(true);
+      try {
+        const attemptRef = doc(firestore, 'studentAttempts', selectedAppeal.attemptId);
+        const attemptSnap = await getDoc(attemptRef);
+        
+        if (attemptSnap.exists()) {
+          const attemptData = attemptSnap.data();
+          const examRef = doc(firestore, 'exams', attemptData.examId);
+          const examSnap = await getDoc(examRef);
+
+          if (examSnap.exists()) {
+            const examData = examSnap.data();
+            const question = examData.questions?.find((q: any) => q.id === selectedAppeal.questionId);
+            const studentAnswer = attemptData.answers?.[selectedAppeal.questionId];
+
+            setAppealContext({
+              question,
+              studentAnswer,
+              examName: examData.name
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Context fetch error:", e);
+      } finally {
+        setIsContextLoading(false);
+      }
+    }
+
+    fetchAppealContext();
+  }, [selectedAppeal, firestore]);
 
   const createNewExam = () => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -79,15 +122,18 @@ export default function AdminDashboard() {
             }
           };
 
-          // Re-calculate points
           const examRef = doc(firestore, 'exams', attemptData.examId);
           const examSnap = await getDoc(examRef);
           let earnedPoints = 0;
+          let maxPoints = 10;
+
           if (examSnap.exists()) {
              const examData = examSnap.data();
+             maxPoints = examData.questions?.length || 10;
              examData.questions?.forEach((q: any) => {
                const ans = attemptData.answers?.[q.id];
                if (!ans) return;
+               
                if (q.id === selectedAppeal.questionId) {
                  earnedPoints += awardedScore;
                } else if (q.type === 'mcq' || q.type === 'open') {
@@ -98,13 +144,13 @@ export default function AdminDashboard() {
              });
           }
 
-          const maxPoints = attemptData.maxPoints || 10;
           const totalScore = maxPoints > 0 ? (earnedPoints / maxPoints) * 100 : 0;
 
           await updateDoc(attemptRef, { 
             results: updatedResults,
             earnedPoints: earnedPoints,
-            totalScore: totalScore
+            totalScore: totalScore,
+            maxPoints: maxPoints
           });
         }
       }
@@ -208,11 +254,11 @@ export default function AdminDashboard() {
 
           <TabsContent value="appeals">
             <Card className="border-none bg-card/50 backdrop-blur-sm shadow-xl rounded-[2.5rem] overflow-hidden">
-              <ScrollArea className="h-[70vh]">
+              <ScrollArea className="h-[75vh]">
                 <div className="p-8 space-y-4">
                   {!appeals || appeals.length === 0 ? (
                     <div className="text-center py-24 opacity-20 flex flex-col items-center gap-6">
-                      <MessageSquarePlus className="w-20 h-20" />
+                      <MessageSquare className="w-20 h-20" />
                       <p className="text-2xl font-black">Hələ heç bir apelyasiya müraciəti yoxdur.</p>
                     </div>
                   ) : (
@@ -246,87 +292,161 @@ export default function AdminDashboard() {
       </div>
 
       <Dialog open={!!selectedAppeal} onOpenChange={(open) => !open && setSelectedAppeal(null)}>
-        <DialogContent className="max-w-2xl rounded-[2rem] bg-card border-border/50 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black">Apelyasiya Detalları</DialogTitle>
+        <DialogContent className="max-w-4xl rounded-[2rem] bg-card border-border/50 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-8 border-b bg-muted/20">
+            <DialogTitle className="text-2xl font-black flex items-center gap-3">
+              <MessageSquare className="w-6 h-6 text-primary" />
+              Apelyasiya Detalları
+            </DialogTitle>
             <DialogDescription className="font-medium text-muted-foreground">
-              Tələbənin müraciətini dəyərləndirin və müvafiq balı təyin edin.
+              {selectedAppeal?.studentName} tərəfindən göndərilən müraciət.
             </DialogDescription>
           </DialogHeader>
           
-          {selectedAppeal && (
-            <div className="space-y-6 py-6">
-              <div className="space-y-3">
-                <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Tələbənin Səbəbi:</h4>
-                <div className="p-6 bg-muted/30 rounded-[1.5rem] font-bold text-foreground italic border border-border/50 leading-relaxed">
-                  "{selectedAppeal.studentReason}"
+          <ScrollArea className="flex-1">
+            <div className="p-8 space-y-10 pb-20">
+              {isContextLoading ? (
+                <div className="space-y-6">
+                  <Skeleton className="h-40 w-full rounded-2xl" />
+                  <Skeleton className="h-40 w-full rounded-2xl" />
                 </div>
-              </div>
-
-              {selectedAppeal.status === 'pending' ? (
-                <div className="space-y-4">
-                  <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Qərarınız və Rəyiniz:</h4>
-                  <Textarea 
-                    placeholder="Tələbəyə rəyinizi bura yazın..."
-                    value={adminComment}
-                    onChange={(e) => setAdminComment(e.target.value)}
-                    className="min-h-[120px] rounded-2xl bg-muted/20 border-border/50 text-lg"
-                  />
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4">
-                    <Button 
-                      className="bg-green-600 hover:bg-green-700 font-black h-14 rounded-2xl text-white shadow-lg" 
-                      onClick={() => handleAppealDecision('approved', 1)}
-                      disabled={isProcessingAppeal}
-                    >
-                      +1
-                    </Button>
-                    <Button 
-                      className="bg-lime-500 hover:bg-lime-600 font-black h-14 rounded-2xl text-white shadow-lg" 
-                      onClick={() => handleAppealDecision('approved', 2/3)}
-                      disabled={isProcessingAppeal}
-                    >
-                      +2/3
-                    </Button>
-                    <Button 
-                      className="bg-lime-400 hover:bg-lime-500 font-black h-14 rounded-2xl text-white shadow-lg" 
-                      onClick={() => handleAppealDecision('approved', 1/2)}
-                      disabled={isProcessingAppeal}
-                    >
-                      +1/2
-                    </Button>
-                    <Button 
-                      className="bg-lime-300 hover:bg-lime-400 font-black h-14 rounded-2xl text-white shadow-lg" 
-                      onClick={() => handleAppealDecision('approved', 1/3)}
-                      disabled={isProcessingAppeal}
-                    >
-                      +1/3
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      className="font-black h-14 rounded-2xl shadow-lg" 
-                      onClick={() => handleAppealDecision('rejected')}
-                      disabled={isProcessingAppeal}
-                    >
-                      Rədd et
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3 pt-6 border-t border-border/50">
-                  <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Sizin Rəyiniz:</h4>
-                  <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl font-bold text-foreground">
-                    {selectedAppeal.adminComment || "Rəy bildirilməyib."}
-                  </div>
-                  {selectedAppeal.status === 'approved' && (
-                    <div className="inline-flex items-center gap-2 text-lime-500 font-black bg-lime-500/10 px-6 py-2 rounded-full mt-2">
-                      <Check className="w-4 h-4" />
-                      Verilən bal: +{selectedAppeal.awardedScore === 1 ? '1' : selectedAppeal.awardedScore.toFixed(2)}
+              ) : appealContext ? (
+                <>
+                  {/* Question Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-primary">
+                      <HelpCircle className="w-5 h-5" />
+                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Sual:</h4>
                     </div>
-                  )}
+                    <Card className="rounded-2xl border-none bg-muted/30 p-6 space-y-4 shadow-inner">
+                      <p className="text-lg font-bold text-foreground leading-relaxed">
+                        {appealContext.question?.text}
+                      </p>
+                      {appealContext.question?.image && (
+                        <div className="rounded-xl overflow-hidden border-2 border-border/50 max-w-md bg-card">
+                          <img src={appealContext.question.image} alt="Sual" className="w-full h-auto" />
+                        </div>
+                      )}
+                      <div className="flex gap-4 items-center pt-2">
+                        <Badge variant="outline" className="font-mono bg-card text-primary border-primary/20">
+                          Növ: {appealContext.question?.type}
+                        </Badge>
+                        <Badge variant="outline" className="font-mono bg-card text-green-500 border-green-500/20">
+                          Doğru Cavab: {appealContext.question?.correctAnswer}
+                        </Badge>
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* Student Answer Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-primary">
+                      <User className="w-5 h-5" />
+                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Tələbənin Cavabı:</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card className="rounded-2xl border-none bg-primary/5 p-6 space-y-2 shadow-inner">
+                        <span className="text-[10px] font-black text-primary/60 uppercase">Yekun Cavab:</span>
+                        <p className="text-2xl font-black text-primary">
+                          {appealContext.studentAnswer?.finalAnswer || "Yoxdur"}
+                        </p>
+                      </Card>
+                      <Card className="rounded-2xl border-none bg-muted/50 p-6 space-y-2 shadow-inner">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase">İzah/Həll Yolu:</span>
+                        <p className="text-sm font-medium italic text-foreground leading-relaxed">
+                          "{appealContext.studentAnswer?.explanation || "İzah daxil edilməyib."}"
+                        </p>
+                      </Card>
+                    </div>
+                  </div>
+
+                  {/* Appeal Reason Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-primary">
+                      <FileText className="w-5 h-5" />
+                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Apelyasiya Səbəbi:</h4>
+                    </div>
+                    <div className="p-6 bg-destructive/5 rounded-2xl font-bold text-foreground italic border-2 border-dashed border-destructive/20 leading-relaxed">
+                      "{selectedAppeal.studentReason}"
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-10 opacity-30">
+                  Məlumatlar yüklənə bilmədi.
                 </div>
               )}
+
+              {/* Decision Section */}
+              <div className="space-y-6 pt-10 border-t border-border/50">
+                {selectedAppeal?.status === 'pending' ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 text-primary">
+                      <Check className="w-5 h-5" />
+                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Qərarınız və Rəyiniz:</h4>
+                    </div>
+                    <Textarea 
+                      placeholder="Tələbəyə rəyinizi bura yazın..."
+                      value={adminComment}
+                      onChange={(e) => setAdminComment(e.target.value)}
+                      className="min-h-[120px] rounded-2xl bg-muted/20 border-border/50 text-lg shadow-sm"
+                    />
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      <Button 
+                        className="bg-green-600 hover:bg-green-700 font-black h-14 rounded-2xl text-white shadow-lg" 
+                        onClick={() => handleAppealDecision('approved', 1)}
+                        disabled={isProcessingAppeal}
+                      >
+                        +1
+                      </Button>
+                      <Button 
+                        className="bg-lime-500 hover:bg-lime-600 font-black h-14 rounded-2xl text-white shadow-lg" 
+                        onClick={() => handleAppealDecision('approved', 2/3)}
+                        disabled={isProcessingAppeal}
+                      >
+                        +2/3
+                      </Button>
+                      <Button 
+                        className="bg-lime-400 hover:bg-lime-500 font-black h-14 rounded-2xl text-white shadow-lg" 
+                        onClick={() => handleAppealDecision('approved', 1/2)}
+                        disabled={isProcessingAppeal}
+                      >
+                        +1/2
+                      </Button>
+                      <Button 
+                        className="bg-lime-300 hover:bg-lime-400 font-black h-14 rounded-2xl text-white shadow-lg" 
+                        onClick={() => handleAppealDecision('approved', 1/3)}
+                        disabled={isProcessingAppeal}
+                      >
+                        +1/3
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        className="font-black h-14 rounded-2xl shadow-lg" 
+                        onClick={() => handleAppealDecision('rejected')}
+                        disabled={isProcessingAppeal}
+                      >
+                        Rədd et
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Sizin Rəyiniz:</h4>
+                    <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl font-bold text-foreground">
+                      {selectedAppeal?.adminComment || "Rəy bildirilməyib."}
+                    </div>
+                    {selectedAppeal?.status === 'approved' && (
+                      <div className="inline-flex items-center gap-2 text-lime-500 font-black bg-lime-500/10 px-6 py-2 rounded-full mt-2">
+                        <Check className="w-4 h-4" />
+                        Verilən bal: +{selectedAppeal?.awardedScore === 1 ? '1' : selectedAppeal?.awardedScore?.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>
