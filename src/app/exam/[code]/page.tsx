@@ -17,6 +17,17 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function ExamSession() {
   const { code } = useParams();
@@ -206,9 +217,31 @@ export default function ExamSession() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button onClick={handleFinish} variant="destructive" className="font-black px-6 h-10 rounded-xl shadow-lg hover:scale-105 transition-all text-white text-sm">
-              Bitir
-            </Button>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="font-black px-6 h-10 rounded-xl shadow-lg hover:scale-105 transition-all text-white text-sm">
+                  Bitir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-3xl bg-card/90 backdrop-blur-3xl border-white/10">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-2xl font-black">İmtahanı bitirmək istədiyinizə əminsiniz?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-lg font-medium opacity-80">
+                    İmtahanı bitirdikdən sonra heç bir cavabı dəyişmək və ya geri qayıtmaq mümkün olmayacaq. Bütün cavablarınız yoxlanılmaq üçün göndəriləcək.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="mt-6">
+                  <AlertDialogCancel className="rounded-xl h-12 font-black border-white/10">Ləğv et</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleFinish}
+                    className="rounded-xl h-12 font-black bg-destructive hover:bg-destructive/90 text-white"
+                  >
+                    Bəli, Bitir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </header>
