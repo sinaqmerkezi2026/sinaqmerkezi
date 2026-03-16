@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Image as ImageIcon, Sparkles, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Sparkles, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -12,10 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function AdminDashboard() {
@@ -47,7 +46,6 @@ export default function AdminDashboard() {
     }
   }, [router]);
 
-  // Fetch context (Question and Student Answer) when an appeal is selected
   useEffect(() => {
     async function fetchAppealContext() {
       if (!selectedAppeal) {
@@ -92,12 +90,7 @@ export default function AdminDashboard() {
     fetchAppealContext();
   }, [selectedAppeal, firestore]);
 
-  const createNewExam = () => {
-    const id = Math.random().toString(36).substr(2, 9);
-    router.push(`/nicat/admin/exam/${id}`);
-  };
-
-  const handleAppealDecision = async (status: 'approved' | 'rejected', awardedScore?: number) => {
+  const handleAppealDecision = async (status: 'approved' | 'rejected', awardedScore: number = 0) => {
     if (!selectedAppeal) return;
     setIsProcessingAppeal(true);
 
@@ -107,64 +100,60 @@ export default function AdminDashboard() {
         status,
         adminComment,
         processedAt: Date.now(),
-        awardedScore: awardedScore || 0
+        awardedScore: awardedScore
       });
 
-      if (status === 'approved' && awardedScore !== undefined) {
-        const attemptRef = doc(firestore, 'studentAttempts', selectedAppeal.attemptId);
-        const attemptSnap = await getDoc(attemptRef);
+      const attemptRef = doc(firestore, 'studentAttempts', selectedAppeal.attemptId);
+      const attemptSnap = await getDoc(attemptRef);
+      
+      if (attemptSnap.exists()) {
+        const attemptData = attemptSnap.data();
+        const currentResults = attemptData.results || {};
         
-        if (attemptSnap.exists()) {
-          const attemptData = attemptSnap.data();
-          const currentResults = attemptData.results || {};
-          
-          const updatedResults = {
-            ...currentResults,
-            [selectedAppeal.questionId]: {
-              ...currentResults[selectedAppeal.questionId],
-              score: awardedScore,
-              feedback: `Apelyasiya təsdiqləndi: ${adminComment}`
-            }
-          };
-
-          const examRef = doc(firestore, 'exams', attemptData.examId);
-          const examSnap = await getDoc(examRef);
-          let earnedPoints = 0;
-          let maxPoints = 0;
-
-          if (examSnap.exists()) {
-             const examData = examSnap.data();
-             const questions = examData.questions || [];
-             maxPoints = questions.length;
-
-             questions.forEach((q: any) => {
-               const ans = attemptData.answers?.[q.id];
-               if (!ans) return;
-               
-               if (q.id === selectedAppeal.questionId) {
-                 earnedPoints += awardedScore;
-               } else {
-                 const existingRes = updatedResults[q.id];
-                 if (existingRes && typeof existingRes.score === 'number') {
-                   earnedPoints += existingRes.score;
-                 } else if (q.type === 'mcq' || q.type === 'open') {
-                   if (ans.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase()) {
-                     earnedPoints += 1;
-                   }
-                 }
-               }
-             });
+        const updatedResults = {
+          ...currentResults,
+          [selectedAppeal.questionId]: {
+            ...currentResults[selectedAppeal.questionId],
+            score: status === 'approved' ? awardedScore : (currentResults[selectedAppeal.questionId]?.score || 0),
+            feedback: status === 'approved' ? `Apelyasiya təsdiqləndi: ${adminComment}` : `Apelyasiya rədd edildi: ${adminComment}`,
+            isAppealed: true,
+            appealStatus: status
           }
+        };
 
-          const totalScore = maxPoints > 0 ? (earnedPoints / maxPoints) * 100 : 0;
+        const examRef = doc(firestore, 'exams', attemptData.examId);
+        const examSnap = await getDoc(examRef);
+        let earnedPoints = 0;
+        let maxPoints = 0;
 
-          await updateDoc(attemptRef, { 
-            results: updatedResults,
-            earnedPoints: earnedPoints,
-            totalScore: totalScore,
-            maxPoints: maxPoints
-          });
+        if (examSnap.exists()) {
+           const examData = examSnap.data();
+           const questions = examData.questions || [];
+           maxPoints = questions.length;
+
+           questions.forEach((q: any) => {
+             const ans = attemptData.answers?.[q.id];
+             if (!ans) return;
+             
+             const questionResult = updatedResults[q.id];
+             if (questionResult && typeof questionResult.score === 'number') {
+               earnedPoints += questionResult.score;
+             } else if (q.type === 'mcq' || q.type === 'open') {
+               if (ans.finalAnswer?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase()) {
+                 earnedPoints += 1;
+               }
+             }
+           });
         }
+
+        const totalScore = maxPoints > 0 ? (earnedPoints / maxPoints) * 100 : 0;
+
+        await updateDoc(attemptRef, { 
+          results: updatedResults,
+          earnedPoints: earnedPoints,
+          totalScore: totalScore,
+          maxPoints: maxPoints
+        });
       }
 
       toast({ title: 'Uğurlu', description: `Apelyasiya ${status === 'approved' ? 'təsdiqləndi' : 'rədd edildi'}.` });
@@ -188,7 +177,7 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />
-          <Button onClick={createNewExam} className="font-black rounded-xl shadow-lg transition-all text-white">
+          <Button onClick={() => router.push(`/nicat/admin/exam/${Math.random().toString(36).substr(2, 9)}`)} className="font-black rounded-xl shadow-lg transition-all text-white">
             <Plus className="w-4 h-4 mr-2" />
             Yeni İmtahan
           </Button>
@@ -218,7 +207,7 @@ export default function AdminDashboard() {
               <Card className="border-dashed border-4 py-24 flex flex-col items-center justify-center text-muted-foreground bg-transparent rounded-[2.5rem]">
                 <Plus className="w-16 h-16 mb-4 opacity-10" />
                 <p className="text-xl font-bold">Hələ heç bir imtahan yaradılmayıb</p>
-                <Button variant="link" onClick={createNewExam} className="text-primary font-bold">İlk imtahanı yarat</Button>
+                <Button variant="link" onClick={() => router.push(`/nicat/admin/exam/${Math.random().toString(36).substr(2, 9)}`)} className="text-primary font-bold">İlk imtahanı yarat</Button>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -280,7 +269,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-4">
                             <span className="font-black text-foreground text-lg">{appeal.studentName}</span>
                             <Badge variant={appeal.status === 'approved' ? 'default' : appeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-lg">
-                              {appeal.status === 'pending' ? 'Gözləmədə' : appeal.status === 'approved' ? `Təsdiqləndi (+${appeal.awardedScore?.toFixed(2)})` : 'Rədd edildi'}
+                              {appeal.status === 'pending' ? 'Gözləmədə' : appeal.status === 'approved' ? `Təsdiqləndi (+${(appeal.awardedScore || 0).toFixed(2)})` : 'Rədd edildi'}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground max-w-xl line-clamp-1 italic">"{appeal.studentReason}"</p>
@@ -317,22 +306,13 @@ export default function AdminDashboard() {
           
           <ScrollArea className="flex-1">
             <div className="p-8 space-y-10 pb-20">
-              
-              {/* Context Loading Skeleton */}
               {isContextLoading && (
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-32 w-full rounded-2xl" />
-                  </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-24 w-full rounded-2xl" />
-                  </div>
+                  <Skeleton className="h-32 w-full rounded-2xl" />
+                  <Skeleton className="h-24 w-full rounded-2xl" />
                 </div>
               )}
 
-              {/* Error State */}
               {!isContextLoading && appealContext?.error && (
                 <Alert variant="destructive" className="rounded-2xl">
                   <AlertCircle className="h-4 w-4" />
@@ -341,10 +321,8 @@ export default function AdminDashboard() {
                 </Alert>
               )}
 
-              {/* Appeal Context Data (Question and Answer) */}
               {!isContextLoading && appealContext && !appealContext.error && (
                 <>
-                  {/* Question Section */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-primary">
                       <HelpCircle className="w-5 h-5" />
@@ -370,7 +348,6 @@ export default function AdminDashboard() {
                     </Card>
                   </div>
 
-                  {/* Student Answer Section */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-primary">
                       <User className="w-5 h-5" />
@@ -394,20 +371,18 @@ export default function AdminDashboard() {
                 </>
               )}
 
-              {/* Always show the appeal reason */}
               {selectedAppeal && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-primary">
                     <FileText className="w-5 h-5" />
                     <h4 className="text-xs font-black uppercase tracking-[0.2em]">Tələbənin Apelyasiya Səbəbi:</h4>
                   </div>
-                  <div className="p-6 bg-destructive/5 rounded-2xl font-bold text-foreground italic border-2 border-dashed border-destructive/20 leading-relaxed shadow-sm">
+                  <div className="p-6 bg-destructive/5 rounded-2xl font-bold text-foreground italic border-2 border-dashed border-destructive/20 shadow-sm">
                     "{selectedAppeal.studentReason}"
                   </div>
                 </div>
               )}
 
-              {/* Decision and Action Section */}
               <div className="space-y-6 pt-10 border-t border-border/50">
                 {selectedAppeal?.status === 'pending' ? (
                   <div className="space-y-6">
@@ -431,21 +406,21 @@ export default function AdminDashboard() {
                       </Button>
                       <Button 
                         className="bg-lime-500 hover:bg-lime-600 font-black h-14 rounded-2xl text-white shadow-lg" 
-                        onClick={() => handleAppealDecision('approved', 2/3)}
+                        onClick={() => handleAppealDecision('approved', 0.67)}
                         disabled={isProcessingAppeal}
                       >
                         +0.67
                       </Button>
                       <Button 
                         className="bg-lime-400 hover:bg-lime-500 font-black h-14 rounded-2xl text-white shadow-lg" 
-                        onClick={() => handleAppealDecision('approved', 1/2)}
+                        onClick={() => handleAppealDecision('approved', 0.50)}
                         disabled={isProcessingAppeal}
                       >
                         +0.50
                       </Button>
                       <Button 
                         className="bg-lime-300 hover:bg-lime-400 font-black h-14 rounded-2xl text-white shadow-lg" 
-                        onClick={() => handleAppealDecision('approved', 1/3)}
+                        onClick={() => handleAppealDecision('approved', 0.33)}
                         disabled={isProcessingAppeal}
                       >
                         +0.33
@@ -466,18 +441,11 @@ export default function AdminDashboard() {
                     <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl font-bold text-foreground shadow-sm">
                       {selectedAppeal?.adminComment || "Rəy bildirilməyib."}
                     </div>
-                    {selectedAppeal?.status === 'approved' && (
-                      <div className="inline-flex items-center gap-2 text-lime-500 font-black bg-lime-500/10 px-6 py-2 rounded-full mt-2">
-                        <Check className="w-4 h-4" />
-                        Verilən bal: +{selectedAppeal?.awardedScore?.toFixed(2)}
-                      </div>
-                    )}
-                    {selectedAppeal?.status === 'rejected' && (
-                      <div className="inline-flex items-center gap-2 text-destructive font-black bg-destructive/10 px-6 py-2 rounded-full mt-2">
-                        <X className="w-4 h-4" />
-                        Rədd edildi
-                      </div>
-                    )}
+                    <div className="flex gap-2 mt-2">
+                      <Badge variant={selectedAppeal?.status === 'approved' ? 'default' : 'destructive'} className="rounded-full px-6 py-2 font-black">
+                        {selectedAppeal?.status === 'approved' ? `TƏSDİQLƏNDİ (+${(selectedAppeal?.awardedScore || 0).toFixed(2)})` : 'RƏDD EDİLDİ'}
+                      </Badge>
+                    </div>
                   </div>
                 )}
               </div>
