@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy, MessageSquarePlus, Clock, Link as LinkIcon } from 'lucide-react';
+import { CheckCircle2, XCircle, Award, Share2, ArrowLeft, BrainCircuit, Loader2, Sparkles, Trophy, MessageSquarePlus, Clock, ChevronDown, ListChecks } from 'lucide-react';
 import { gradeExplanationQuestion } from '@/ai/flows/grade-explanation-question-flow';
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { doc, getDoc, updateDoc, collection, setDoc, query, where } from 'firebase/firestore';
@@ -25,7 +25,7 @@ export default function Results() {
   const [appealReason, setAppealReason] = useState("");
   const [isSubmittingAppeal, setIsSubmittingAppeal] = useState(false);
 
-  // 1. Get Access Code Doc
+  // Get Access Code Doc
   const cleanCode = code?.toString().trim().toUpperCase();
   const codeRef = useMemoFirebase(() => 
     cleanCode ? doc(firestore, 'accessCodes', cleanCode) : null,
@@ -33,21 +33,21 @@ export default function Results() {
   );
   const { data: codeData, isLoading: isCodeLoading } = useDoc(codeRef);
 
-  // 2. Get Attempt Doc
+  // Get Attempt Doc
   const attemptRef = useMemoFirebase(() => 
     codeData?.studentAttemptId ? doc(firestore, 'studentAttempts', codeData.studentAttemptId) : null,
     [firestore, codeData?.studentAttemptId]
   );
   const { data: attempt, isLoading: isAttemptLoading } = useDoc(attemptRef);
 
-  // 3. Get Exam Doc
+  // Get Exam Doc
   const examRef = useMemoFirebase(() => 
     attempt?.examId ? doc(firestore, 'exams', attempt.examId) : null,
     [firestore, attempt?.examId]
   );
   const { data: exam, isLoading: isExamLoading } = useDoc(examRef);
 
-  // 4. Get Appeals for real-time status
+  // Get Appeals
   const appealsQuery = useMemoFirebase(() => 
     attempt?.id ? query(collection(firestore, 'appeals'), where('attemptId', '==', attempt.id)) : null,
     [firestore, attempt?.id]
@@ -111,8 +111,8 @@ export default function Results() {
     const totalScore = maxPoints > 0 ? (earnedPoints / maxPoints) * 100 : 0;
     
     try {
-      const attemptRef = doc(firestore, 'studentAttempts', a.id);
-      await updateDoc(attemptRef, { 
+      const aRef = doc(firestore, 'studentAttempts', a.id);
+      await updateDoc(aRef, { 
         results: feedbacks,
         totalScore: totalScore,
         earnedPoints: earnedPoints,
@@ -125,7 +125,6 @@ export default function Results() {
     setIsGrading(false);
   };
 
-  // Run initial grading if needed
   useEffect(() => {
     if (exam && attempt && !attempt.results && !isGrading) {
       gradeExplanations(exam, attempt);
@@ -165,18 +164,15 @@ export default function Results() {
   const handleShare = () => {
     const url = `${window.location.origin}/results/${code}`;
     navigator.clipboard.writeText(url).then(() => {
-      toast({
-        title: "Link kopyalandı",
-        description: "Nəticə linki müvəffəqiyyətlə yaddaşa kopyalandı.",
-      });
-    }).catch((err) => {
-      console.error('Kopyalama xətası:', err);
-      toast({
-        title: "Xəta",
-        description: "Linki kopyalamaq mümkün olmadı.",
-        variant: "destructive"
-      });
+      toast({ title: "Link kopyalandı", description: "Nəticə linki müvəffəqiyyətlə yaddaşa kopyalandı." });
     });
+  };
+
+  const scrollToQuestion = (id: string) => {
+    const el = document.getElementById(`q-review-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
   if (isCodeLoading || isAttemptLoading || isExamLoading) {
@@ -206,10 +202,10 @@ export default function Results() {
   const maxPoints = exam.questions?.length || 0;
 
   return (
-    <div className="min-h-screen bg-background p-6 font-body">
+    <div className="min-h-screen bg-background p-6 font-body pb-24">
       <div className="max-w-5xl mx-auto space-y-12">
-        <header className="flex justify-between items-center">
-          <Button variant="ghost" onClick={() => router.push('/')} className="rounded-xl font-bold hover:bg-muted shadow-sm border border-transparent">
+        <header className="flex justify-between items-center sticky top-0 z-[60] bg-background/80 backdrop-blur-md py-4">
+          <Button variant="ghost" onClick={() => router.push('/')} className="rounded-xl font-bold hover:bg-muted shadow-sm">
             <ArrowLeft className="w-5 h-5 mr-2" />
             Ana Səhifə
           </Button>
@@ -222,186 +218,222 @@ export default function Results() {
           </div>
         </header>
 
+        {/* Hero Score Card */}
         <Card className="border-none shadow-2xl bg-gradient-to-br from-primary via-primary/80 to-blue-900 text-white rounded-[3rem] overflow-hidden relative">
           <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12">
             <Trophy className="w-64 h-64 text-white" />
           </div>
-          <CardContent className="relative z-10 py-20 flex flex-col items-center">
-            <div className="bg-white/10 p-8 rounded-[2rem] backdrop-blur-md mb-8 shadow-2xl border border-white/20">
-              <Award className="w-20 h-20 text-white" />
+          <CardContent className="relative z-10 py-16 flex flex-col items-center">
+            <div className="bg-white/10 p-6 rounded-[2rem] backdrop-blur-md mb-6 shadow-2xl border border-white/20">
+              <Award className="w-16 h-16 text-white" />
             </div>
-            <CardTitle className="text-5xl font-black mb-4 drop-shadow-md text-white">İmtahan Bitdi!</CardTitle>
-            <CardDescription className="text-white/80 text-xl font-medium mb-10 max-w-lg text-center leading-relaxed">
-              Təbriklər <span className="text-white font-black">{attempt.studentFirstName} {attempt.studentLastName}</span>, zəhmətiniz AI tərəfindən ballandırıldı.
+            <CardTitle className="text-4xl font-black mb-3 drop-shadow-md text-white">İmtahan Bitdi!</CardTitle>
+            <CardDescription className="text-white/80 text-lg font-medium mb-8 max-w-lg text-center">
+              Təbriklər <span className="text-white font-black">{attempt.studentFirstName} {attempt.studentLastName}</span>, nəticəniz hesablandı.
             </CardDescription>
             
             <div className="flex flex-col items-center">
-              <div className="relative group">
-                <div className="absolute -inset-4 bg-white/10 rounded-full blur-3xl"></div>
-                <div className="relative text-[10rem] font-black leading-none flex items-center text-white tabular-nums">
-                  {earnedPoints.toFixed(earnedPoints % 1 === 0 ? 0 : 2)}
-                  <span className="text-4xl font-bold mx-4 opacity-40">/</span>
-                  <span className="text-7xl font-bold opacity-60">{maxPoints}</span>
-                </div>
+              <div className="relative text-[8rem] font-black leading-none flex items-center text-white tabular-nums drop-shadow-2xl">
+                {earnedPoints.toFixed(earnedPoints % 1 === 0 ? 0 : 2)}
+                <span className="text-3xl font-bold mx-4 opacity-40">/</span>
+                <span className="text-5xl font-bold opacity-60">{maxPoints}</span>
               </div>
-              <div className="mt-4 text-sm uppercase tracking-[0.5em] font-black bg-white/10 px-8 py-2 rounded-full border border-white/20 text-white">
+              <div className="mt-4 text-xs uppercase tracking-[0.5em] font-black bg-white/10 px-8 py-2 rounded-full border border-white/20 text-white">
                 Ümumi Bal Hesabı
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-5 space-y-6">
-            <h3 className="text-muted-foreground text-sm font-black uppercase tracking-[0.2em] px-2 flex items-center gap-3">
-              <Sparkles className="w-4 h-4 text-primary" />
-              Sual Analizi
-            </h3>
-            <div className="space-y-4">
-              {(exam.questions || []).map((q: any, i: number) => {
-                const ans = attempt.answers?.[q.id];
-                const studentFinal = ans?.finalAnswer?.trim().toLowerCase();
-                const correctFinal = q.correctAnswer?.trim().toLowerCase();
-                const isCorrect = studentFinal === correctFinal;
-                const score = q.type === 'explanation' ? (aiFeedbacks[q.id]?.score || 0) : (isCorrect ? 1 : 0);
-                const existingAppeal = appeals?.find(a => a.questionId === q.id);
+        {/* Question Navigation Grid (The Image Request) */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 px-2">
+            <ListChecks className="w-6 h-6 text-primary" />
+            <h3 className="text-xl font-black text-foreground">Sual Naviqasiyası</h3>
+          </div>
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-4 bg-card/30 p-8 rounded-[2.5rem] border border-border/50 shadow-inner">
+            {(exam.questions || []).map((q: any, i: number) => {
+              const ans = attempt.answers?.[q.id];
+              const studentFinal = ans?.finalAnswer?.trim().toLowerCase();
+              const correctFinal = q.correctAnswer?.trim().toLowerCase();
+              const isCorrect = studentFinal === correctFinal;
+              const score = q.type === 'explanation' ? (aiFeedbacks[q.id]?.score || 0) : (isCorrect ? 1 : 0);
 
-                return (
-                  <Card key={q.id} className="border border-border/50 shadow-sm rounded-2xl overflow-hidden bg-card/50 hover:shadow-md transition-shadow">
-                    <CardContent className="p-6 flex flex-col gap-4">
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-5">
-                          <div className={cn(
-                            "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm",
-                            score === 1 ? "bg-green-500/10 text-green-500" : 
-                            score > 0 ? "bg-lime-500/10 text-lime-500" : 
-                            "bg-red-500/10 text-red-500"
-                          )}>
-                            {i + 1}
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-foreground font-bold text-lg">Sual {i + 1}</span>
-                            <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{q.type === 'explanation' ? 'AI İzahlı' : q.type === 'mcq' ? 'Qapalı' : 'Açıq'}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          {score === 1 ? <CheckCircle2 className="w-8 h-8 text-green-500" /> : 
-                           score > 0 ? <CheckCircle2 className="w-8 h-8 text-lime-500" /> : 
-                           <XCircle className="w-8 h-8 text-red-500" />}
-                        </div>
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => scrollToQuestion(q.id)}
+                  className={cn(
+                    "relative w-full aspect-square flex items-center justify-center bg-white dark:bg-card rounded-xl text-lg font-black shadow-lg transition-all hover:scale-105 active:scale-95 border-b-8",
+                    score === 1 ? "border-green-600 text-green-600" : 
+                    score > 0 ? "border-lime-500 text-lime-500" : 
+                    "border-red-600 text-red-600"
+                  )}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Detailed Question Review List */}
+        <div className="space-y-12 mt-16">
+          <div className="flex items-center gap-3 px-2">
+            <Sparkles className="w-6 h-6 text-primary" />
+            <h3 className="text-2xl font-black text-foreground">Ətraflı İcmal</h3>
+          </div>
+
+          {(exam.questions || []).map((q: any, i: number) => {
+            const ans = attempt.answers?.[q.id];
+            const studentFinal = ans?.finalAnswer || "Cavab yoxdur";
+            const correctFinal = q.correctAnswer;
+            const isCorrect = studentFinal.trim().toLowerCase() === correctFinal.trim().toLowerCase();
+            const score = q.type === 'explanation' ? (aiFeedbacks[q.id]?.score || 0) : (isCorrect ? 1 : 0);
+            const existingAppeal = appeals?.find(a => a.questionId === q.id);
+
+            return (
+              <Card 
+                key={q.id} 
+                id={`q-review-${q.id}`}
+                className={cn(
+                  "border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card/50 backdrop-blur-sm transition-all duration-500 border-l-8",
+                  score === 1 ? "border-green-500" : score > 0 ? "border-lime-500" : "border-red-500"
+                )}
+              >
+                <CardHeader className="p-8 border-b border-border/50 bg-muted/20">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black shadow-inner",
+                        score === 1 ? "bg-green-500 text-white" : score > 0 ? "bg-lime-500 text-white" : "bg-red-500 text-white"
+                      )}>
+                        {i + 1}
                       </div>
+                      <div>
+                        <CardTitle className="text-xl font-black">Sual {i + 1}</CardTitle>
+                        <CardDescription className="font-bold uppercase tracking-wider text-[10px]">
+                          {q.type === 'explanation' ? 'AI İzahlı' : q.type === 'mcq' ? 'Qapalı' : 'Açıq'}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge className={cn(
+                      "rounded-full px-6 py-2 font-black text-sm shadow-md",
+                      score === 1 ? "bg-green-500" : score > 0 ? "bg-lime-500" : "bg-red-500"
+                    )}>
+                      {score.toFixed(2)} Bal
+                    </Badge>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="p-10 space-y-10">
+                  <div className="space-y-6">
+                    <p className="text-2xl font-bold text-foreground leading-tight">{q.text}</p>
+                    {q.image && (
+                      <div className="max-w-lg rounded-3xl overflow-hidden border-4 border-muted/50 shadow-xl mx-auto">
+                        <img src={q.image} alt="Sual şəkli" className="w-full h-auto" />
+                      </div>
+                    )}
+                  </div>
 
-                      {(q.type === 'open' || q.type === 'explanation') && (
-                        <div className="flex justify-end pt-2 border-t border-border/50">
-                          {existingAppeal ? (
-                            <div className="flex items-center gap-2">
-                              <Badge variant={existingAppeal.status === 'approved' ? 'default' : existingAppeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-lg py-1 px-3">
-                                {existingAppeal.status === 'pending' ? 'Apelyasiya gözləmədə' : existingAppeal.status === 'approved' ? `Təsdiqləndi (+${existingAppeal.awardedScore})` : 'Rədd edildi'}
-                              </Badge>
-                            </div>
-                          ) : (
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-xs font-black gap-1 h-8 hover:bg-primary/10 hover:text-primary transition-colors">
-                                  <MessageSquarePlus className="w-3 h-3" />
-                                  Apelyasiya ver
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Apelyasiya Müraciəti</DialogTitle>
-                                  <DialogDescription>
-                                    Bu sualın qiymətləndirilməsində səhv olduğunu düşünürsünüzsə, səbəbi ətraflı qeyd edin.
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4 py-4">
-                                  <Textarea 
-                                    placeholder="Niyə etiraz edirsiniz? (Məs: Hesablamam düzdür, lakin AI səhv sayıb...)"
-                                    value={appealReason}
-                                    onChange={(e) => setAppealReason(e.target.value)}
-                                    className="min-h-[120px] rounded-xl"
-                                  />
-                                </div>
-                                <DialogFooter>
-                                  <Button onClick={() => handleAppeal(q.id)} disabled={isSubmittingAppeal}>
-                                    {isSubmittingAppeal ? 'Göndərilir...' : 'Müraciət et'}
-                                  </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
-                          )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Student Answer */}
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <ChevronDown className="w-4 h-4" />
+                        Sizin Cavabınız
+                      </h4>
+                      <div className={cn(
+                        "p-6 rounded-[2rem] border-2 shadow-inner font-black text-xl flex items-center gap-4",
+                        score === 1 ? "bg-green-500/5 border-green-500/20 text-green-600" :
+                        score > 0 ? "bg-lime-500/5 border-lime-500/20 text-lime-600" :
+                        "bg-red-500/5 border-red-500/20 text-red-600"
+                      )}>
+                        {score === 1 ? <CheckCircle2 className="w-6 h-6" /> : score > 0 ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                        {studentFinal}
+                      </div>
+                      {q.type === 'explanation' && (
+                        <div className="bg-muted/30 p-6 rounded-2xl text-sm italic border border-border/50 text-foreground/80 leading-relaxed">
+                          <span className="font-black text-[10px] block mb-2 opacity-50 uppercase">Ətraflı İzahınız:</span>
+                          "{ans?.explanation || 'İzah yazılmayıb.'}"
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
+                    </div>
 
-          <div className="lg:col-span-7 space-y-6">
-            <h3 className="text-muted-foreground text-sm font-black uppercase tracking-[0.2em] px-2 flex items-center gap-3">
-              <BrainCircuit className="w-5 h-5 text-primary" />
-              Süni İntellekt Rəyləri
-            </h3>
-            <div className="space-y-8">
-              {isGrading ? (
-                <div className="bg-card rounded-[3rem] p-20 flex flex-col items-center justify-center text-center space-y-6 shadow-sm border border-border/50">
-                  <div className="relative">
-                    <BrainCircuit className="w-20 h-20 animate-pulse text-primary/30" />
-                    <Loader2 className="w-full h-full absolute inset-0 animate-spin text-primary opacity-20" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-2xl font-black text-foreground">Analiz aparılır...</p>
-                    <p className="text-muted-foreground font-medium">AI sizin izahlarınızı dərindən araşdırır.</p>
-                  </div>
-                </div>
-              ) : (
-                (exam.questions || []).filter((q: any) => q.type === 'explanation').length === 0 ? (
-                  <div className="bg-card rounded-[2rem] p-16 text-center text-muted-foreground font-bold shadow-sm border border-border/50">
-                    Bu imtahanda izahlı sual yoxdur.
-                  </div>
-                ) : (
-                  (exam.questions || []).filter((q: any) => q.type === 'explanation').map((q: any) => (
-                    <Card key={q.id} className="border border-border/50 shadow-xl rounded-[2.5rem] bg-card/50 overflow-hidden group">
-                      <CardHeader className="p-8 border-b border-border/50 bg-muted/20">
-                        <div className="flex justify-between items-start gap-6">
-                          <p className="font-black text-xl text-foreground leading-tight pr-10">{q.text}</p>
-                          <div className={cn(
-                            "px-6 py-3 rounded-2xl shadow-lg border",
-                            (aiFeedbacks[q.id]?.score || 0) === 1 ? "bg-green-500/10 border-green-500/20 text-green-500" :
-                            (aiFeedbacks[q.id]?.score || 0) > 0 ? "bg-lime-500/10 border-lime-500/20 text-lime-500" :
-                            "bg-red-500/10 border-red-500/20 text-red-500"
-                          )}>
-                            <span className="text-2xl font-black">
-                              {aiFeedbacks[q.id]?.score !== undefined ? aiFeedbacks[q.id].score.toFixed(2) : 0} Bal
-                            </span>
-                          </div>
+                    {/* Correct Answer */}
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                        <ChevronDown className="w-4 h-4" />
+                        Doğru Cavab
+                      </h4>
+                      <div className="p-6 rounded-[2rem] bg-primary/5 border-2 border-primary/20 text-primary font-black text-xl shadow-inner flex items-center gap-4">
+                        <CheckCircle2 className="w-6 h-6" />
+                        {correctFinal}
+                      </div>
+                      {q.type === 'explanation' && q.explanationCriterion && (
+                        <div className="bg-primary/5 p-6 rounded-2xl text-sm text-primary/80 border border-primary/20 leading-relaxed">
+                          <span className="font-black text-[10px] block mb-2 opacity-50 uppercase">Qiymətləndirmə Meyarı:</span>
+                          {q.explanationCriterion}
                         </div>
-                      </CardHeader>
-                      <CardContent className="p-8 space-y-6">
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-black text-muted-foreground uppercase tracking-widest">Sizin İzahınız:</h4>
-                          <div className="bg-muted/30 p-6 rounded-2xl text-foreground leading-relaxed font-medium italic">
-                            "{attempt.answers?.[q.id]?.explanation || 'İzah daxil edilməyib.'}"
+                      )}
+                    </div>
+                  </div>
+
+                  {/* AI Feedback Section */}
+                  {q.type === 'explanation' && aiFeedbacks[q.id] && (
+                    <div className="bg-primary/10 p-8 rounded-[2.5rem] border-4 border-primary/20 shadow-xl space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                      <div className="flex items-center gap-3 text-primary">
+                        <BrainCircuit className="w-8 h-8" />
+                        <h4 className="text-xl font-black">AI-nın Qiymətləndirməsi</h4>
+                      </div>
+                      <p className="text-lg font-bold leading-relaxed text-foreground">
+                        {aiFeedbacks[q.id].feedback}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Appeal Action */}
+                  <div className="flex justify-end pt-4 border-t border-border/50">
+                    {existingAppeal ? (
+                      <Badge variant={existingAppeal.status === 'approved' ? 'default' : existingAppeal.status === 'rejected' ? 'destructive' : 'secondary'} className="rounded-xl py-2 px-6 font-black">
+                        {existingAppeal.status === 'pending' ? 'Apelyasiya Gözləmədə' : existingAppeal.status === 'approved' ? `Təsdiqləndi (+${existingAppeal.awardedScore})` : 'Apelyasiya Rədd Edildi'}
+                      </Badge>
+                    ) : (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="rounded-xl font-black gap-2 hover:bg-primary/10 hover:text-primary transition-all border-primary/20 text-primary">
+                            <MessageSquarePlus className="w-4 h-4" />
+                            Apelyasiya Ver
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="rounded-[2rem]">
+                          <DialogHeader>
+                            <DialogTitle className="text-2xl font-black">Apelyasiya Müraciəti</DialogTitle>
+                            <DialogDescription className="font-medium">
+                              Bu sualın qiymətləndirilməsində səhv olduğunu düşünürsünüzsə, səbəbi ətraflı qeyd edin.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="py-4">
+                            <Textarea 
+                              placeholder="Məs: Hesablamam düzdür, lakin AI teoremi səhv sayıb..."
+                              value={appealReason}
+                              onChange={(e) => setAppealReason(e.target.value)}
+                              className="min-h-[150px] rounded-2xl border-2 focus:ring-primary"
+                            />
                           </div>
-                        </div>
-                        <div className="bg-primary/10 p-8 rounded-[2rem] border border-primary/20 space-y-4 shadow-inner">
-                          <div className="flex items-center gap-3 text-primary">
-                            <BrainCircuit className="w-6 h-6" />
-                            <h4 className="font-black text-lg">AI-nın Qiymətləndirməsi:</h4>
-                          </div>
-                          <p className="text-foreground leading-relaxed font-bold text-lg">
-                            {aiFeedbacks[q.id]?.feedback || 'Yoxlama zamanı xəta baş verdi.'}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )
-              )}
-            </div>
-          </div>
+                          <DialogFooter>
+                            <Button className="rounded-xl font-black px-8" onClick={() => handleAppeal(q.id)} disabled={isSubmittingAppeal}>
+                              {isSubmittingAppeal ? 'Göndərilir...' : 'Müraciət Et'}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>
