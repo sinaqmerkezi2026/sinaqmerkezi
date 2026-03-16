@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy, Heart } from 'lucide-react';
+import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy, Heart, Info } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query } from 'firebase/firestore';
 import {
@@ -19,6 +19,14 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function StudentEntry() {
   const [code, setCode] = useState('');
@@ -127,6 +135,37 @@ export default function StudentEntry() {
           <span className="font-black text-2xl tracking-tight text-foreground">Sınaq<span className="text-primary">Mərkəzi</span></span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" className="font-bold gap-2 text-foreground/70 hover:bg-primary/10 hover:text-primary rounded-xl">
+                <Info className="w-5 h-5" />
+                <span className="hidden sm:inline">Haqqımızda</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl rounded-[2.5rem] bg-card/90 backdrop-blur-3xl border-white/10 shadow-3xl">
+              <DialogHeader className="p-4">
+                <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
+                  <Info className="w-8 h-8 text-primary" />
+                  Platforma Haqqında
+                </DialogTitle>
+              </DialogHeader>
+              <div className="p-6 space-y-6 text-lg font-medium leading-relaxed text-foreground/80">
+                <p>
+                  Bu platforma buraxılış və blok imtahanlarına hazırlaşan abituriyentlər üçün nəzərdə tutulmuşdur. Burada istifadəçilər müxtəlif imtahan biletləri vasitəsilə öz biliklərini yoxlaya və imtahan mühitinə daha yaxşı hazırlaşa biləər.
+                </p>
+                <p>
+                  Platformada yalnız abituriyentlər deyil, həmçinin müxtəlif siniflər üzrə biliklərini təkmilləşdirmək istəyən şagirdlər də iştirak edə bilərlər. İmtahan bileti almaq üçün müvafiq linklərə klik etməyiniz kifayətdir. Müraciət etdikdən sonra sizinlə əlaqə saxlanılacaq və imtahan bileti ilə bağlı məlumat veriləcək.
+                </p>
+                <p>
+                  Saytda promo kod sistemi də mövcuddur. Əgər promo kodunuz varsa, ondan istifadə edərək xüsusi endirimlər qazana bilərsiniz. Endirim faizi imtahan nəticələrinə əsasən təyin olunur və daha yüksək nəticə əldə edən istifadəçilər daha böyük endirim imkanlarından yararlana bilərlər.
+                </p>
+                <p>
+                  Əlavə dəstək göstərmək və ya layihənin inkişafına töhfə vermək istəyirsinizsə, bunu da edə bilərsiniz. Təşəkkür edirik!
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Button 
             variant="ghost" 
             className="font-bold gap-2 text-red-500 hover:bg-red-500/10 rounded-xl"
