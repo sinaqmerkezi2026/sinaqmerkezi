@@ -152,10 +152,10 @@ export default function ExamSession() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-6">
           <div className="relative">
-            <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
-            <Sparkles className="w-6 h-6 text-primary absolute top-0 right-0 animate-pulse" />
+            <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+            <Sparkles className="w-5 h-5 text-primary absolute top-0 right-0 animate-pulse" />
           </div>
-          <p className="text-muted-foreground font-black text-xl">İmtahan sessiyası hazırlanır...</p>
+          <p className="text-muted-foreground font-black text-lg">İmtahan sessiyası hazırlanır...</p>
         </div>
       </div>
     );
@@ -169,10 +169,10 @@ export default function ExamSession() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <div className="text-center space-y-6">
-          <AlertCircle className="w-20 h-20 text-red-500 mx-auto opacity-20" />
-          <h2 className="text-3xl font-black text-foreground">Sual tapılmadı</h2>
-          <p className="text-muted-foreground text-lg">Bu imtahanda hələ sual əlavə edilməyib.</p>
-          <Button size="lg" className="rounded-2xl px-12" onClick={() => router.push('/')}>Geri qayıt</Button>
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto opacity-20" />
+          <h2 className="text-2xl font-black text-foreground">Sual tapılmadı</h2>
+          <p className="text-muted-foreground">Bu imtahanda hələ sual əlavə edilməyib.</p>
+          <Button size="lg" className="rounded-xl px-12" onClick={() => router.push('/')}>Geri qayıt</Button>
         </div>
       </div>
     );
@@ -184,70 +184,70 @@ export default function ExamSession() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <header className="bg-card/40 backdrop-blur-2xl border-b border-white/10 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-2xl">
+      <header className="bg-card/40 backdrop-blur-2xl border-b border-white/10 px-6 py-3 flex justify-between items-center sticky top-0 z-50 shadow-xl">
         <div className="flex items-center gap-4">
-          <div className="bg-primary/20 p-2.5 rounded-2xl shadow-lg">
-            <GraduationCap className="w-6 h-6 text-primary" />
+          <div className="bg-primary/20 p-2 rounded-xl shadow-lg">
+            <GraduationCap className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="font-black text-xl text-foreground hidden md:block">{exam.name}</h1>
-            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">{attempt.studentFirstName} {attempt.studentLastName}</p>
+            <h1 className="font-black text-lg text-foreground hidden md:block">{exam.name}</h1>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">{attempt.studentFirstName} {attempt.studentLastName}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <div className={cn(
-            "flex items-center gap-3 px-8 py-3 rounded-2xl font-mono text-2xl font-black transition-all duration-500 shadow-inner min-w-[150px] justify-center border-2",
+            "flex items-center gap-2 px-6 py-2 rounded-xl font-mono text-xl font-black transition-all duration-500 shadow-inner min-w-[120px] justify-center border",
             timeLeft < 300 ? 'bg-red-500/10 text-red-500 animate-pulse border-red-500/30' : 'bg-background/50 text-foreground border-white/10'
           )}>
-            <Timer className={cn("w-6 h-6", timeLeft < 300 ? "text-red-500" : "text-primary")} />
+            <Timer className={cn("w-5 h-5", timeLeft < 300 ? "text-red-500" : "text-primary")} />
             {formatTime(timeLeft)}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button onClick={handleFinish} variant="destructive" className="font-black px-8 h-12 rounded-[1.2rem] shadow-xl hover:scale-105 transition-all text-white">
+            <Button onClick={handleFinish} variant="destructive" className="font-black px-6 h-10 rounded-xl shadow-lg hover:scale-105 transition-all text-white text-sm">
               Bitir
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto w-full p-6 flex-1 flex flex-col space-y-10 z-10">
-        <div className="space-y-4 bg-card/20 backdrop-blur-xl p-8 rounded-[3rem] shadow-2xl border border-white/10">
+      <div className="max-w-4xl mx-auto w-full p-6 flex-1 flex flex-col space-y-6 z-10">
+        <div className="space-y-3 bg-card/20 backdrop-blur-xl p-6 rounded-3xl shadow-xl border border-white/10">
           <div className="flex justify-between items-end">
             <div className="space-y-1">
-              <span className="text-xs font-black text-primary uppercase tracking-[0.3em]">İmtahan Tərəqqisi</span>
-              <h2 className="text-3xl font-black text-foreground">Sual {currentIdx + 1} <span className="text-muted-foreground font-medium opacity-50">/ {questions.length}</span></h2>
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">İmtahan Tərəqqisi</span>
+              <h2 className="text-xl font-black text-foreground">Sual {currentIdx + 1} <span className="text-muted-foreground font-medium opacity-50 text-sm">/ {questions.length}</span></h2>
             </div>
-            <Badge className="text-xl font-black px-6 py-2 rounded-2xl bg-primary/10 text-primary border-primary/20">{Math.round(progress)}%</Badge>
+            <Badge variant="outline" className="text-sm font-black px-4 py-1 rounded-full bg-primary/10 text-primary border-primary/20">{Math.round(progress)}%</Badge>
           </div>
-          <Progress value={progress} className="h-5 rounded-full bg-muted/30 border border-white/5" />
+          <Progress value={progress} className="h-3 rounded-full bg-muted/30 border border-white/5" />
         </div>
 
-        <Card className="shadow-2xl border border-white/10 rounded-[4rem] overflow-hidden bg-card/30 backdrop-blur-3xl flex-1 flex flex-col">
-          <CardHeader className="p-12 border-b border-white/10 bg-muted/10">
-            <CardTitle className="text-4xl font-black leading-[1.1] text-foreground tracking-tight">
+        <Card className="shadow-2xl border border-white/10 rounded-3xl overflow-hidden bg-card/30 backdrop-blur-3xl flex-1 flex flex-col">
+          <CardHeader className="p-8 border-b border-white/10 bg-muted/5">
+            <CardTitle className="text-2xl font-black leading-tight text-foreground tracking-tight">
               {currentQ.text}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-12 space-y-12 flex-1">
+          <CardContent className="p-8 space-y-8 flex-1">
             {currentQ.image && (
-              <div className="rounded-[3rem] border-[12px] border-white/5 overflow-hidden bg-card/50 shadow-2xl max-w-2xl mx-auto group ring-1 ring-white/10">
+              <div className="rounded-2xl border-4 border-white/5 overflow-hidden bg-card/50 shadow-xl max-w-lg mx-auto group ring-1 ring-white/10">
                 <img 
                   src={currentQ.image} 
                   alt="Sual şəkli" 
-                  className="w-full h-auto transition-transform duration-700 group-hover:scale-110" 
+                  className="w-full h-auto transition-transform duration-700 group-hover:scale-105" 
                 />
               </div>
             )}
 
-            <div className="space-y-8">
+            <div className="space-y-6">
               {currentQ.type === 'mcq' && (
                 <RadioGroup 
                   value={attempt.answers?.[currentQ.id]?.finalAnswer || ''} 
                   onValueChange={(val) => updateAnswer(currentQ.id, val)}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-8"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
                 >
                   {(currentQ.options || []).map((opt: string, i: number) => {
                     const isSelected = attempt.answers?.[currentQ.id]?.finalAnswer === opt;
@@ -255,19 +255,19 @@ export default function ExamSession() {
                       <Label 
                         key={i} 
                         className={cn(
-                          "flex items-center gap-8 p-8 rounded-[2.5rem] border-4 cursor-pointer transition-all duration-500 relative overflow-hidden group shadow-lg",
+                          "flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 relative overflow-hidden group shadow-md",
                           isSelected 
-                            ? "border-primary bg-primary/10 shadow-2xl scale-[1.03] ring-4 ring-primary/20" 
-                            : "border-white/5 bg-background/20 hover:border-primary/40 hover:bg-muted/30 hover:scale-[1.01]"
+                            ? "border-primary bg-primary/10 shadow-lg scale-[1.02] ring-2 ring-primary/20" 
+                            : "border-white/5 bg-background/20 hover:border-primary/40 hover:bg-muted/30"
                         )}
                       >
                         <div className={cn(
-                          "w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black transition-all shadow-xl",
-                          isSelected ? "bg-primary text-white scale-110" : "bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
+                          "w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black transition-all shadow-md",
+                          isSelected ? "bg-primary text-white scale-105" : "bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
                         )}>
                           {String.fromCharCode(65 + i)}
                         </div>
-                        <span className="text-2xl font-bold text-foreground flex-1 tracking-tight">{opt}</span>
+                        <span className="text-lg font-bold text-foreground flex-1 tracking-tight">{opt}</span>
                         <RadioGroupItem value={opt} className="hidden" />
                       </Label>
                     );
@@ -276,11 +276,11 @@ export default function ExamSession() {
               )}
 
               {currentQ.type === 'open' && (
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <div className="p-12 bg-muted/10 backdrop-blur-xl rounded-[4rem] border-4 border-dashed border-white/10 space-y-6 shadow-2xl flex flex-col items-center">
-                    <Label className="text-2xl font-black text-foreground uppercase tracking-widest text-center opacity-70">Cavabınızı Daxil Edin</Label>
+                <div className="max-w-xl mx-auto space-y-6">
+                  <div className="p-8 bg-muted/5 backdrop-blur-xl rounded-3xl border-2 border-dashed border-white/10 space-y-4 shadow-xl flex flex-col items-center">
+                    <Label className="text-sm font-black text-foreground uppercase tracking-widest text-center opacity-60">Cavabınızı Daxil Edin</Label>
                     <Input 
-                      className="h-24 text-5xl font-black text-center px-10 rounded-[2rem] border-none shadow-[0_20px_50px_rgba(0,0,0,0.3)] bg-background text-foreground focus:ring-8 focus:ring-primary/20 transition-all w-full"
+                      className="h-16 text-3xl font-black text-center px-6 rounded-xl border-none shadow-xl bg-background text-foreground focus:ring-4 focus:ring-primary/20 transition-all w-full"
                       value={attempt.answers?.[currentQ.id]?.finalAnswer || ''}
                       onChange={(e) => updateAnswer(currentQ.id, e.target.value)}
                       placeholder="..."
@@ -290,34 +290,34 @@ export default function ExamSession() {
               )}
 
               {currentQ.type === 'explanation' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                  <div className="space-y-6">
-                    <Label className="text-2xl font-black text-foreground flex items-center gap-4">
-                      <div className="bg-primary text-white w-12 h-12 rounded-[1.2rem] flex items-center justify-center text-xl shadow-2xl">1</div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <Label className="text-lg font-black text-foreground flex items-center gap-3">
+                      <div className="bg-primary text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm shadow-lg">1</div>
                       Ətraflı İzah
                     </Label>
                     <Textarea 
-                      className="min-h-[450px] text-2xl leading-relaxed rounded-[3rem] border-4 border-white/5 p-10 shadow-2xl bg-background/30 focus:bg-background focus:ring-8 focus:ring-primary/20 transition-all text-foreground resize-none"
-                      placeholder="Məsələnin həll yolunu və məntiqini ətraflı şəkildə bura yazın..."
+                      className="min-h-[300px] text-lg leading-relaxed rounded-2xl border-2 border-white/5 p-6 shadow-xl bg-background/30 focus:bg-background focus:ring-4 focus:ring-primary/20 transition-all text-foreground resize-none"
+                      placeholder="Həll yolunu və məntiqini ətraflı yazın..."
                       value={attempt.answers?.[currentQ.id]?.explanation || ''}
                       onChange={(e) => updateAnswer(currentQ.id, attempt.answers?.[currentQ.id]?.finalAnswer || '', e.target.value)}
                     />
                   </div>
-                  <div className="space-y-6">
-                    <Label className="text-2xl font-black text-primary flex items-center gap-4">
-                      <div className="bg-primary text-white w-12 h-12 rounded-[1.2rem] flex items-center justify-center text-xl shadow-2xl">2</div>
+                  <div className="space-y-4">
+                    <Label className="text-lg font-black text-primary flex items-center gap-3">
+                      <div className="bg-primary text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm shadow-lg">2</div>
                       Yekun Nəticə
                     </Label>
-                    <div className="p-12 bg-primary/5 rounded-[4rem] border-4 border-primary/20 shadow-2xl flex flex-col items-center justify-center space-y-10 flex-1">
+                    <div className="p-8 bg-primary/5 rounded-3xl border-2 border-primary/10 shadow-xl flex flex-col items-center justify-center space-y-6 flex-1">
                       <Input 
                         placeholder="Yekun cavab..."
-                        className="h-24 bg-background text-5xl font-black text-center rounded-[2rem] border-none shadow-[0_25px_60px_rgba(0,0,0,0.4)] focus:ring-10 focus:ring-primary/30 w-full text-foreground"
+                        className="h-16 bg-background text-3xl font-black text-center rounded-xl border-none shadow-xl focus:ring-6 focus:ring-primary/20 w-full text-foreground"
                         value={attempt.answers?.[currentQ.id]?.finalAnswer || ''}
                         onChange={(e) => updateAnswer(currentQ.id, e.target.value, attempt.answers?.[currentQ.id]?.explanation)}
                       />
-                      <div className="flex items-center gap-3 text-primary font-black bg-primary/10 px-8 py-3 rounded-full border border-primary/20 shadow-lg animate-pulse">
-                        <Sparkles className="w-6 h-6" />
-                        <span className="text-sm uppercase tracking-widest">AI Qiymətləndirmə Aktivdir</span>
+                      <div className="flex items-center gap-2 text-primary font-black bg-primary/10 px-4 py-2 rounded-full border border-primary/20 shadow-md animate-pulse">
+                        <Sparkles className="w-4 h-4" />
+                        <span className="text-[10px] uppercase tracking-widest">AI Qiymətləndirmə Aktivdir</span>
                       </div>
                     </div>
                   </div>
@@ -327,19 +327,19 @@ export default function ExamSession() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8 pb-16">
+        <div className="flex justify-between items-center gap-4 pb-10">
           <Button 
             variant="outline" 
             size="lg" 
             disabled={currentIdx === 0}
             onClick={() => setCurrentIdx(p => p - 1)}
-            className="rounded-[2rem] h-20 px-12 border-4 font-black text-xl bg-card/40 backdrop-blur-xl shadow-2xl hover:bg-muted hover:scale-105 transition-all disabled:opacity-20"
+            className="rounded-xl h-12 px-6 border-2 font-black text-sm bg-card/40 backdrop-blur-xl shadow-lg hover:bg-muted hover:scale-105 transition-all disabled:opacity-20"
           >
-            <ChevronLeft className="w-8 h-8 mr-3" />
+            <ChevronLeft className="w-5 h-5 mr-2" />
             Əvvəlki
           </Button>
 
-          <div className="flex flex-wrap justify-center gap-4 bg-background/20 backdrop-blur-3xl p-6 rounded-[3rem] border border-white/10 shadow-2xl">
+          <div className="flex flex-wrap justify-center gap-2 bg-background/20 backdrop-blur-3xl p-3 rounded-2xl border border-white/10 shadow-lg">
             {questions.map((_: any, i: number) => {
               const isAnswered = !!attempt.answers?.[questions[i].id]?.finalAnswer;
               const isCurrent = i === currentIdx;
@@ -348,12 +348,12 @@ export default function ExamSession() {
                   key={i}
                   onClick={() => setCurrentIdx(i)}
                   className={cn(
-                    "w-14 h-14 rounded-2xl text-xl font-black transition-all duration-500 transform hover:scale-110 active:scale-90",
+                    "w-10 h-10 rounded-xl text-sm font-black transition-all duration-300 transform hover:scale-110 active:scale-95",
                     isCurrent 
-                      ? "bg-primary text-white scale-125 shadow-[0_10px_30px_rgba(var(--primary),0.5)] z-10" 
+                      ? "bg-primary text-white scale-110 shadow-lg z-10" 
                       : isAnswered 
-                        ? "bg-primary/20 text-primary border-2 border-primary/30" 
-                        : "bg-muted/30 border-2 border-white/5 text-muted-foreground/50 hover:border-primary/50"
+                        ? "bg-primary/20 text-primary border border-primary/30" 
+                        : "bg-muted/30 border border-white/5 text-muted-foreground/50 hover:border-primary/50"
                   )}
                 >
                   {i + 1}
@@ -366,10 +366,10 @@ export default function ExamSession() {
             size="lg"
             disabled={currentIdx === questions.length - 1}
             onClick={() => setCurrentIdx(p => p + 1)}
-            className="rounded-[2rem] h-20 px-12 font-black text-xl shadow-[0_20px_50px_rgba(var(--primary),0.3)] hover:scale-110 hover:translate-x-2 transition-all text-white disabled:opacity-20"
+            className="rounded-xl h-12 px-6 font-black text-sm shadow-xl hover:scale-105 transition-all text-white disabled:opacity-20"
           >
             Növbəti
-            <ChevronRight className="w-8 h-8 ml-3" />
+            <ChevronRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
       </div>
