@@ -1,20 +1,21 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Plus, Trash2, ArrowLeft, Key, ImageIcon, Copy, Check, Hash, Ticket, UserCheck } from 'lucide-react';
+import { Save, Plus, Trash2, ArrowLeft, Key, ImageIcon, Copy, Check, Hash, Ticket, UserCheck, Layers } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -39,6 +40,7 @@ interface Exam {
   price: number;
   codes: string[];
   questions: Question[];
+  categoryId?: string;
 }
 
 export default function ExamEditor() {
@@ -57,11 +59,15 @@ export default function ExamEditor() {
     durationMinutes: 60,
     price: 1,
     codes: [],
-    questions: []
+    questions: [],
+    categoryId: ""
   });
 
   const examRef = useMemoFirebase(() => doc(firestore, 'exams', id as string), [firestore, id]);
   const { data: existingExam } = useDoc(examRef);
+
+  const categoriesQuery = useMemoFirebase(() => query(collection(firestore, 'categories'), orderBy('name')), [firestore]);
+  const { data: categories } = useCollection(categoriesQuery);
 
   const codesQuery = useMemoFirebase(() => 
     query(collection(firestore, 'accessCodes'), where('examId', '==', id)),
@@ -89,7 +95,7 @@ export default function ExamEditor() {
       id: Math.random().toString(36).substr(2, 9),
       type: 'mcq',
       text: '',
-      options: ['', '', '', ''],
+      options: ['', '', '', '', ''],
       correctAnswer: '',
     };
     setExamState(prev => ({ ...prev, questions: [...(prev.questions || []), q] }));
@@ -112,13 +118,6 @@ export default function ExamEditor() {
     );
     setExamState(prev => ({ ...prev, codes: [...(prev.codes || []), ...codes] }));
     toast({ title: 'Uğurlu', description: '100 ədəd yeni unikal kod siyahıya əlavə edildi.' });
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCode(text);
-    setTimeout(() => setCopiedCode(null), 2000);
-    toast({ title: 'Kopyalandı', description: `${text} kodu kopyalandı.` });
   };
 
   const handleSave = () => {
@@ -185,6 +184,22 @@ export default function ExamEditor() {
                     className="h-12 rounded-xl bg-muted/20 border-border/50 text-lg font-bold"
                   />
                 </div>
+                
+                <div className="sm:col-span-2 space-y-2">
+                  <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest px-1">Kateqoriya</Label>
+                  <Select value={examState.categoryId} onValueChange={(val) => setExamState(p => ({ ...p, categoryId: val }))}>
+                    <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-border/50 font-bold">
+                      <SelectValue placeholder="Kateqoriya seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Kateqoriya yoxdur</SelectItem>
+                      {categories?.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-2">
                   <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest px-1">Başlanğıc Tarixi</Label>
                   <Input type="date" value={examState.activeStartDate} onChange={e => setExamState(p => ({ ...p, activeStartDate: e.target.value }))} className="h-12 rounded-xl bg-muted/20 border-border/50" />
@@ -366,14 +381,6 @@ export default function ExamEditor() {
                               className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 hover:border-primary/50 transition-all group"
                             >
                               <span className="font-mono text-sm font-black text-foreground">{codeDoc.code}</span>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
-                                onClick={() => copyToClipboard(codeDoc.code)}
-                              >
-                                {copiedCode === codeDoc.code ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                              </Button>
                             </div>
                           ))}
                         </div>
@@ -395,10 +402,7 @@ export default function ExamEditor() {
                               key={codeDoc.id} 
                               className="flex items-center justify-between p-4 rounded-2xl bg-muted/10 border border-border/50"
                             >
-                              <div className="flex flex-col gap-1">
-                                <span className="font-mono text-sm font-black text-muted-foreground line-through decoration-destructive/50">{codeDoc.code}</span>
-                                <span className="text-[10px] text-primary font-black uppercase tracking-wider">Sessiya: {codeDoc.studentAttemptId}</span>
-                              </div>
+                              <span className="font-mono text-sm font-black text-muted-foreground line-through decoration-destructive/50">{codeDoc.code}</span>
                               <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 font-black">
                                 İŞLƏNİB
                               </Badge>
