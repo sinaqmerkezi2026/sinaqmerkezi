@@ -1,24 +1,24 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Sparkles, AlertCircle, Ticket, Search, Power, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Sparkles, AlertCircle, Ticket, Search, Power, Trash2, Tag, Layers } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, getDoc, updateDoc, deleteDoc, where } from 'firebase/firestore';
+import { collection, query, orderBy, doc, getDoc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
@@ -39,10 +39,12 @@ export default function AdminDashboard() {
   const examsQuery = useMemoFirebase(() => query(collection(firestore, 'exams'), orderBy('name')), [firestore]);
   const appealsQuery = useMemoFirebase(() => query(collection(firestore, 'appeals'), orderBy('createdAt', 'desc')), [firestore]);
   const promosQuery = useMemoFirebase(() => query(collection(firestore, 'promoCodes'), orderBy('createdAt', 'desc')), [firestore]);
+  const categoriesQuery = useMemoFirebase(() => query(collection(firestore, 'categories'), orderBy('name')), [firestore]);
 
   const { data: exams, isLoading: isExamsLoading } = useCollection(examsQuery);
   const { data: appeals, isLoading: isAppealsLoading } = useCollection(appealsQuery);
   const { data: promos, isLoading: isPromosLoading } = useCollection(promosQuery);
+  const { data: categories, isLoading: isCategoriesLoading } = useCollection(categoriesQuery);
 
   // States
   const [selectedAppeal, setSelectedAppeal] = useState<any>(null);
@@ -51,6 +53,10 @@ export default function AdminDashboard() {
   const [isProcessingAppeal, setIsProcessingAppeal] = useState(false);
   const [isContextLoading, setIsContextLoading] = useState(false);
   const [promoSearch, setPromoSearch] = useState("");
+  
+  // Category states
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   // Filter promos
   const filteredPromos = useMemo(() => {
@@ -158,30 +164,27 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteAppeal = async (appealId: string) => {
-    if (!confirm("Bu apelyasiya müraciətini silmək istədiyinizə əminsiniz?")) return;
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    const catId = Math.random().toString(36).substr(2, 9);
     try {
-      await deleteDoc(doc(firestore, 'appeals', appealId));
-      toast({ title: 'Silindi', description: 'Apelyasiya müraciəti təmizləndi.' });
+      await setDoc(doc(firestore, 'categories', catId), {
+        id: catId,
+        name: newCategoryName.trim()
+      });
+      setNewCategoryName("");
+      setIsCategoryDialogOpen(false);
+      toast({ title: 'Uğurlu', description: 'Kateqoriya əlavə edildi.' });
     } catch (e) {
-      toast({ title: 'Xəta', description: 'Silmək mümkün olmadı.', variant: 'destructive' });
+      toast({ title: 'Xəta', description: 'Əlavə etmək mümkün olmadı.', variant: 'destructive' });
     }
   };
 
-  const togglePromoStatus = async (promoId: string, field: 'isActive' | 'isUsed', currentVal: boolean) => {
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm("Bu kateqoriyanı silmək istədiyinizə əminsiniz?")) return;
     try {
-      await updateDoc(doc(firestore, 'promoCodes', promoId), { [field]: !currentVal });
-      toast({ title: 'Yeniləndi', description: `Promo kod statusu dəyişdirildi.` });
-    } catch (e) {
-      toast({ title: 'Xəta', description: 'Yeniləmə mümkün olmadı.', variant: 'destructive' });
-    }
-  };
-
-  const deletePromo = async (promoId: string) => {
-    if (!confirm("Bu promo kodu silmək istədiyinizə əminsiniz?")) return;
-    try {
-      await deleteDoc(doc(firestore, 'promoCodes', promoId));
-      toast({ title: 'Silindi', description: 'Promo kod bazadan təmizləndi.' });
+      await deleteDoc(doc(firestore, 'categories', id));
+      toast({ title: 'Silindi', description: 'Kateqoriya silindi.' });
     } catch (e) {
       toast({ title: 'Xəta', description: 'Silmək mümkün olmadı.', variant: 'destructive' });
     }
@@ -211,6 +214,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="exams" className="space-y-6">
           <TabsList className="bg-muted p-1 rounded-xl shadow-inner flex flex-wrap h-auto">
             <TabsTrigger value="exams" className="rounded-lg px-8 font-bold data-[state=active]:bg-background">İmtahanlar</TabsTrigger>
+            <TabsTrigger value="categories" className="rounded-lg px-8 font-bold data-[state=active]:bg-background">Kateqoriyalar</TabsTrigger>
             <TabsTrigger value="appeals" className="rounded-lg px-8 font-bold data-[state=active]:bg-background gap-2">
               Apelyasiyalar
               {appeals?.filter(a => a.status === 'pending').length > 0 && (
@@ -221,9 +225,6 @@ export default function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="promos" className="rounded-lg px-8 font-bold data-[state=active]:bg-background gap-2">
               Promo Kodlar
-              <Badge variant="secondary" className="h-5 min-w-5 flex items-center justify-center p-0 text-[10px] rounded-full">
-                {promos?.length || 0}
-              </Badge>
             </TabsTrigger>
           </TabsList>
 
@@ -234,48 +235,85 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {exams?.map((exam: any) => (
-                  <Card key={exam.id} className="group hover:shadow-2xl transition-all border-none bg-card/50 backdrop-blur-sm rounded-[2.5rem] overflow-hidden hover:ring-2 ring-primary/20">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-xl font-black group-hover:text-primary transition-colors">{exam.name}</CardTitle>
-                        <Badge variant="outline" className="font-mono bg-primary/5 text-primary border-primary/20">AKTİV</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
-                      <div className="flex items-center text-sm text-muted-foreground gap-3 font-medium">
-                        <Calendar className="w-4 h-4 text-primary/60" />
-                        <span>{exam.activeStartDate} - {exam.activeEndDate}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground gap-3 font-medium">
-                        <Clock className="w-4 h-4 text-primary/60" />
-                        <span>{exam.durationMinutes} dəqiqə</span>
-                      </div>
-                      <div className="flex items-center text-sm font-black text-primary gap-3">
-                        <DollarSign className="w-4 h-4" />
-                        <span>{exam.price?.toFixed(2)} AZN</span>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="pt-4 border-t border-border/50 gap-2">
-                      <Button 
-                        variant="ghost" 
-                        className="flex-1 font-black text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl" 
-                        onClick={() => router.push(`/nicat/admin/exam/${exam.id}`)}
-                      >
-                        <Edit className="w-4 h-4 mr-2" /> Redaktə
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        className="px-3 font-black text-destructive hover:bg-destructive/10 rounded-xl" 
-                        onClick={() => handleDeleteExam(exam.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
+                {exams?.map((exam: any) => {
+                  const category = categories?.find(c => c.id === exam.categoryId);
+                  return (
+                    <Card key={exam.id} className="group hover:shadow-2xl transition-all border-none bg-card/50 backdrop-blur-sm rounded-[2.5rem] overflow-hidden hover:ring-2 ring-primary/20">
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <CardTitle className="text-xl font-black group-hover:text-primary transition-colors">{exam.name}</CardTitle>
+                            {category && <Badge variant="secondary" className="bg-primary/10 text-primary border-none">{category.name}</Badge>}
+                          </div>
+                          <Badge variant="outline" className="font-mono bg-primary/5 text-primary border-primary/20">AKTİV</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4 pt-4">
+                        <div className="flex items-center text-sm text-muted-foreground gap-3 font-medium">
+                          <Calendar className="w-4 h-4 text-primary/60" />
+                          <span>{exam.activeStartDate} - {exam.activeEndDate}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground gap-3 font-medium">
+                          <Clock className="w-4 h-4 text-primary/60" />
+                          <span>{exam.durationMinutes} dəqiqə</span>
+                        </div>
+                        <div className="flex items-center text-sm font-black text-primary gap-3">
+                          <DollarSign className="w-4 h-4" />
+                          <span>{exam.price?.toFixed(2)} AZN</span>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="pt-4 border-t border-border/50 gap-2">
+                        <Button 
+                          variant="ghost" 
+                          className="flex-1 font-black text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl" 
+                          onClick={() => router.push(`/nicat/admin/exam/${exam.id}`)}
+                        >
+                          <Edit className="w-4 h-4 mr-2" /> Redaktə
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          className="px-3 font-black text-destructive hover:bg-destructive/10 rounded-xl" 
+                          onClick={() => handleDeleteExam(exam.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="categories">
+            <Card className="border-none bg-card/50 backdrop-blur-sm shadow-xl rounded-[2.5rem] overflow-hidden">
+              <CardHeader className="p-8 flex flex-row items-center justify-between border-b border-border/50">
+                <CardTitle className="text-2xl font-black flex items-center gap-3">
+                  <Layers className="w-6 h-6 text-primary" /> Kateqoriyalar
+                </CardTitle>
+                <Button onClick={() => setIsCategoryDialogOpen(true)} className="rounded-xl font-black shadow-md">
+                  <Plus className="w-4 h-4 mr-2" /> Yeni Kateqoriya
+                </Button>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {categories?.map((cat: any) => (
+                    <Card key={cat.id} className="p-6 bg-muted/20 border-border/50 rounded-2xl flex items-center justify-between group hover:bg-muted/40 transition-all">
+                      <span className="font-black text-lg text-foreground">{cat.name}</span>
+                      <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive" onClick={() => handleDeleteCategory(cat.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </Card>
+                  ))}
+                  {(!categories || categories.length === 0) && !isCategoriesLoading && (
+                    <div className="col-span-full py-20 text-center opacity-20 flex flex-col items-center gap-4">
+                      <Layers className="w-16 h-16" />
+                      <p className="text-xl font-black">Kateqoriya tapılmadı.</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="appeals">
@@ -298,13 +336,14 @@ export default function AdminDashboard() {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground italic">"{appeal.studentReason}"</p>
-                          <p className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-widest">{new Date(appeal.createdAt).toLocaleString()}</p>
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                           <Button variant="outline" size="sm" className="flex-1 sm:flex-initial rounded-xl font-bold bg-background shadow-sm" onClick={() => setSelectedAppeal(appeal)}>
-                            <Info className="w-4 h-4 mr-2" /> Detallar
+                            Detallar
                           </Button>
-                          <Button variant="ghost" size="sm" className="px-3 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => handleDeleteAppeal(appeal.id)}>
+                          <Button variant="ghost" size="sm" className="px-3 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => {
+                            if(confirm("Silmək istəyirsiniz?")) deleteDoc(doc(firestore, 'appeals', appeal.id));
+                          }}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -331,79 +370,42 @@ export default function AdminDashboard() {
               </div>
               <ScrollArea className="h-[65vh]">
                 <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredPromos.length === 0 ? (
-                    <div className="col-span-full text-center py-24 opacity-20 flex flex-col items-center gap-6">
-                      <Ticket className="w-20 h-20" />
-                      <p className="text-2xl font-black">Promo kod tapılmadı.</p>
-                    </div>
-                  ) : (
-                    filteredPromos.map((promo: any) => (
-                      <Card key={promo.id} className="rounded-3xl border-none bg-muted/20 hover:bg-muted/30 transition-all p-6 space-y-6">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">KOD:</span>
-                            <div className="text-2xl font-black text-primary font-mono">{promo.code}</div>
-                          </div>
-                          <Badge className="bg-primary text-white text-xl px-4 py-2 rounded-xl">
-                            {promo.discountPercent}%
-                          </Badge>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <User className="w-4 h-4 text-primary" />
-                            <span className="font-bold text-foreground">{promo.studentName}</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-[10px] font-black text-muted-foreground uppercase">
-                            <Clock className="w-4 h-4" />
-                            {new Date(promo.createdAt).toLocaleString()}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/30">
-                          <div className="flex flex-col gap-2">
-                            <Label className="text-[9px] font-black text-muted-foreground uppercase">İstifadə Statusu</Label>
-                            <div className="flex items-center gap-2">
-                              <Switch 
-                                checked={promo.isUsed} 
-                                onCheckedChange={() => togglePromoStatus(promo.id, 'isUsed', promo.isUsed)}
-                              />
-                              <span className={cn("text-xs font-black", promo.isUsed ? "text-red-500" : "text-green-500")}>
-                                {promo.isUsed ? "İŞLƏNİB" : "MÖVCUD"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <Label className="text-[9px] font-black text-muted-foreground uppercase">Aktivlik</Label>
-                            <div className="flex items-center gap-2">
-                              <Switch 
-                                checked={promo.isActive} 
-                                onCheckedChange={() => togglePromoStatus(promo.id, 'isActive', promo.isActive)}
-                              />
-                              <span className={cn("text-xs font-black", promo.isActive ? "text-primary" : "text-muted-foreground")}>
-                                {promo.isActive ? "AKTİV" : "DEAKTİV"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="w-full mt-2 text-destructive hover:bg-destructive/10 rounded-xl"
-                          onClick={() => deletePromo(promo.id)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" /> Sil
+                  {filteredPromos.map((promo: any) => (
+                    <Card key={promo.id} className="rounded-3xl border-none bg-muted/20 p-6 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div className="text-2xl font-black text-primary font-mono">{promo.code}</div>
+                        <Badge className="bg-primary text-white text-xl px-4 py-2 rounded-xl">{promo.discountPercent}%</Badge>
+                      </div>
+                      <div className="font-bold text-foreground">{promo.studentName}</div>
+                      <div className="flex items-center justify-between pt-4 border-t border-border/30">
+                        <Badge variant={promo.isUsed ? 'destructive' : 'default'}>{promo.isUsed ? "İŞLƏNİB" : "MÖVCUD"}</Badge>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => deleteDoc(doc(firestore, 'promoCodes', promo.id))}>
+                          <Trash2 className="w-4 h-4" />
                         </Button>
-                      </Card>
-                    ))
-                  )}
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               </ScrollArea>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black">Yeni Kateqoriya</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Label className="font-black text-sm uppercase tracking-widest opacity-60">Adı</Label>
+            <Input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} className="rounded-xl h-12 font-bold" placeholder="Məs: Blok İmtahanları" />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleAddCategory} className="w-full rounded-xl h-12 font-black shadow-lg">Əlavə et</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!selectedAppeal} onOpenChange={(open) => !open && setSelectedAppeal(null)}>
         <DialogContent className="max-w-4xl rounded-[2.5rem] bg-card border-border/50 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col p-0">
@@ -414,7 +416,7 @@ export default function AdminDashboard() {
           </DialogHeader>
           <ScrollArea className="flex-1">
             <div className="p-8 space-y-10 pb-20">
-              {isContextLoading ? <Skeleton className="h-64 w-full rounded-3xl" /> : appealContext?.error ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Xəta</AlertTitle><AlertDescription>{appealContext.error}</AlertDescription></Alert> : appealContext && (
+              {isContextLoading ? <Skeleton className="h-64 w-full rounded-3xl" /> : appealContext && (
                 <>
                   <div className="space-y-4">
                     <h4 className="text-xs font-black uppercase text-primary">Sual:</h4>
