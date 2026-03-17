@@ -18,7 +18,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
@@ -106,6 +105,7 @@ export default function AdminDashboard() {
     try {
       const appealRef = doc(firestore, 'appeals', selectedAppeal.id);
       await updateDoc(appealRef, { status, adminComment, processedAt: Date.now(), awardedScore });
+      
       const attemptRef = doc(firestore, 'studentAttempts', selectedAppeal.attemptId);
       const attemptSnap = await getDoc(attemptRef);
       if (attemptSnap.exists()) {
@@ -120,10 +120,12 @@ export default function AdminDashboard() {
             appealStatus: status
           }
         };
+
         const examRef = doc(firestore, 'exams', attemptData.examId);
         const examSnap = await getDoc(examRef);
         let earnedPoints = 0;
         let maxPoints = 0;
+
         if (examSnap.exists()) {
           const examData = examSnap.data();
           const questions = examData.questions || [];
@@ -137,6 +139,7 @@ export default function AdminDashboard() {
             }
           });
         }
+
         await updateDoc(attemptRef, { 
           results: updatedResults, 
           earnedPoints, 
@@ -144,6 +147,7 @@ export default function AdminDashboard() {
           totalScore: maxPoints > 0 ? (earnedPoints / maxPoints) * 100 : 0 
         });
       }
+
       toast({ title: 'Uğurlu', description: `Apelyasiya ${status === 'approved' ? 'təsdiqləndi' : 'rədd edildi'}.` });
       setSelectedAppeal(null);
       setAdminComment("");
