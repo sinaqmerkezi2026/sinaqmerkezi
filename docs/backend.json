@@ -12,9 +12,21 @@
         "activeStartDate": { "type": "string", "format": "date-time" },
         "activeEndDate": { "type": "string", "format": "date-time" },
         "durationMinutes": { "type": "number" },
-        "price": { "type": "number" }
+        "price": { "type": "number" },
+        "categoryId": { "type": "string" }
       },
       "required": ["id", "name", "activeStartDate", "activeEndDate", "durationMinutes", "price"]
+    },
+    "Category": {
+      "title": "Category",
+      "type": "object",
+      "description": "Custom categories for exams.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "icon": { "type": "string" }
+      },
+      "required": ["id", "name"]
     },
     "Question": {
       "title": "Question",
@@ -75,6 +87,14 @@
           "entityName": "Exam",
           "schema": { "$ref": "#/backend/entities/Exam" },
           "description": "Master exam definitions."
+        }
+      },
+      {
+        "path": "categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": { "$ref": "#/backend/entities/Category" },
+          "description": "Exam categories managed by admin."
         }
       },
       {
