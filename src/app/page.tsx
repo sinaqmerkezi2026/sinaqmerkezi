@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -11,13 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy, Heart, Info, Search, LayoutGrid, Target, MessageCircle } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, orderBy } from 'firebase/firestore';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
@@ -158,7 +150,7 @@ export default function StudentEntry() {
               <DialogContent className="rounded-3xl">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-black">Sınaq Mərkəzi Nədir?</DialogTitle>
-                  <DialogDescription className="text-lg font-medium pt-4 space-y-4">
+                  <DialogDescription className="text-lg font-medium pt-4 space-y-4 text-foreground/80">
                     <p>Sınaq Mərkəzi şagirdlərin imtahanlara daha peşəkar və süni intellekt dəstəyi ilə hazırlaşması üçün yaradılmış platformadır.</p>
                     <ul className="list-disc pl-5 space-y-2">
                       <li>İzahlı suallarda AI (Süni İntellekt) qiymətləndirməsi</li>
