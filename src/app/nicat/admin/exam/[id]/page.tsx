@@ -112,7 +112,7 @@ export default function ExamEditor() {
   };
 
   const generateCodes = () => {
-    const codes = Array.from({ length: 100 }, () => 
+    const codes = Array.from({ length: 20 }, () => 
       Math.random().toString(36).substr(2, 6).toUpperCase()
     );
     setExamState(prev => ({ ...prev, codes: [...(prev.codes || []), ...codes] }));
