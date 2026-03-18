@@ -116,7 +116,7 @@ export default function ExamEditor() {
       Math.random().toString(36).substr(2, 6).toUpperCase()
     );
     setExamState(prev => ({ ...prev, codes: [...(prev.codes || []), ...codes] }));
-    toast({ title: 'Uğurlu', description: '100 ədəd yeni unikal kod siyahıya əlavə edildi.' });
+    toast({ title: 'Uğurlu', description: '20 ədəd yeni unikal kod siyahıya əlavə edildi.' });
   };
 
   const handleSave = () => {
