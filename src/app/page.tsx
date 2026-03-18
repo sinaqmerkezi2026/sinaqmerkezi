@@ -113,7 +113,7 @@ export default function StudentEntry() {
   };
 
   const handleBuyByTelegram = (exam: any) => {
-    const telegramUsername = "SinaqMerkeziAdmin"; 
+    const telegramUsername = "sinaqmerkezi"; 
     const message = encodeURIComponent(`Salam, mən "${exam.name}" imtahanı üçün giriş kodu almaq istəyirəm. Qiymət: ${exam.price} AZN.`);
     const url = `https://t.me/${telegramUsername}?text=${message}`;
     window.open(url, '_blank');
