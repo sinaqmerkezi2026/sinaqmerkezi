@@ -120,7 +120,7 @@ export default function StudentEntry() {
   };
 
   const handleSupport = () => {
-    const telegramUsername = "SinaqMerkeziAdmin";
+    const telegramUsername = "sinaqmerkezi";
     const url = `https://t.me/${telegramUsername}`;
     window.open(url, '_blank');
   };
