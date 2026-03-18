@@ -157,7 +157,7 @@ export default function ExamEditor() {
           <ThemeToggle />
           <Button variant="outline" onClick={generateCodes} className="hidden sm:flex rounded-xl font-bold bg-background border-border/50">
             <Key className="w-4 h-4 mr-2" />
-            Yeni Kodlar (+100)
+            Yeni Kodlar (+20)
           </Button>
           <Button onClick={handleSave} className="rounded-xl font-black shadow-lg text-white">
             <Save className="w-4 h-4 mr-2" />
