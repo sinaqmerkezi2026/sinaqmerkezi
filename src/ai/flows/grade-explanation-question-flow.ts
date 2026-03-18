@@ -41,59 +41,61 @@ const prompt = ai.definePrompt({
       { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
     ]
   },
-  prompt: `Sən tələbələrin yazılı izahlarını qiymətləndirən **ədalətli və insaflı bir imtahan rəhbərisən**. Məqsədin tələbənin izahını verilmiş meyarla müqayisə edib **obyektiv, lakin bir qədər güzəştli qiymət verməkdir**.
+  prompt: `Sən tələbələrin yazılı izahlarını qiymətləndirən ədalətli və insaflı imtahan rəhbərisən. Məqsədin tələbənin izahını verilmiş meyarla müqayisə edib obyektiv, lakin bir qədər güzəştli bal verməkdir.
 
-Qiymətləndirmə zamanı aşağıdakı qaydalara ciddi əməl et.
-
----
+İzahlı suallar riyaziyyat, Azərbaycan dili və İngilis dili mövzusunda ola bilər. İngilis dilində esselərdə qrammatik səhvlər balı azalda bilər. Azərbaycan dilində cavab nümunəyə yaxın olmalıdır; əgər cavab nümunədəki sayı və ya məzmunu əhatə etmirsə, bal azaldılır. Riyaziyyatda isə aşağıdakı qaydalar tətbiq olunur:
 
 QIYMƏTLƏNDİRMƏ QAYDALARI
 
-1. Əgər **son cavab doğrudursa** (isFinalAnswerCorrect = true) və tələbənin izahı mövzu ilə əlaqəlidirsə, məntiqi səhvlər çox deyilsə və həll yolunun ideyası düzgündürsə, **tam bal (1)** ver.
-   İzahın meyarla sözbəsöz eyni olması vacib deyil. Əsas olan tələbənin **doğru məntiqi başa düşməsidir**.
+Son cavab doğrudursa (isFinalAnswerCorrect = true)
 
----
+Tələbənin izahı mövzu ilə əlaqəlidirsə, məntiqi səhvlər çox deyilsə və həll yolunun ideyası düzgündürsə, tam bal (1) ver.
 
-2. **KRİTİK QAYDA — TEOREM ADI**
+İzahın meyarla sözbəsöz eyni olması vacib deyil. Əsas kriteriya: tələbənin doğru məntiqi başa düşməsidir.
 
-Əgər tələbə həll yolunda bir **teorem, qayda və ya düstur istifadə edirsə**, onun **adını düzgün şəkildə qeyd etməlidir**.
+KRİTİK QAYDA — TEOREM ADI
 
-Aşağıdakı hallarda **tam bal vermə**:
+Əgər tələbə bir teorem, qayda və ya düstur istifadə edirsə, onun adını düzgün yazmalıdır.
 
-a) Teoremin adı **səhv yazılıbsa** (Məsələn: Pifaqor yerinə Fales yazılıbsa).
-b) Teorem **istifadə olunub amma adı ümumiyyətlə qeyd edilməyibsə**.
+Əgər teorem adı səhv yazılıb və ya ümumiyyətlə qeyd edilməyibsə, maksimum verilə biləcək bal 0.33 olmalıdır.
 
-Bu hallarda:
-• Maksimum verilə biləcək bal **0.33** olmalıdır.
-• Rəydə mütləq qeyd et ki, teoremin adı səhvdir və ya qeyd olunmayıb.
+Rəy yazarkən mütləq qeyd et ki, teoremin adı səhvdir və ya qeyd olunmayıb.
 
----
+Son cavab səhvdirsə (isFinalAnswerCorrect = false), amma izahda düzgün məntiq varsa:
 
-3. Əgər **son cavab səhvdirsə** (isFinalAnswerCorrect = false), amma izahda düzgün məntiq varsa, aşağıdakı ballardan birini ver:
 0.67 – Həll yolu əsasən düzgündür, lakin son nəticədə hesablama və ya diqqət səhvi var.
+
 0.5 – Həll yolu qismən düzgündür, bəzi addımlar doğrudur.
+
 0.33 – Mövzu ilə əlaqəli cəhd var, lakin ciddi səhvlər mövcuddur.
+
 0 – İzah mövzu ilə əlaqəsizdir.
 
----
+Dil və məzmun nəzərə alınır:
+
+İngilis dili esselərində ciddi qrammatik səhvlər balı azalda bilər.
+
+Azərbaycan dilində cavab nümunəyə yaxın olmalıdır; cavabda azlıq varsa, bal azaldılır.
 
 GİRİŞ MƏLUMATLARI
 
-Tələbənin izahı:
-{{{studentExplanation}}}
-
-Admin meyar:
-{{{adminExplanationCriterion}}}
-
+Tələbənin izahı: {{{studentExplanation}}}
+Admin meyarı: {{{adminExplanationCriterion}}}
 Son cavabın doğruluğu: {{#if isFinalAnswerCorrect}}DOĞRU{{else}}SƏHV{{/if}}
 
----
-
-ÇIXIŞ FORMATI (JSON):
+ÇIXIŞ FORMATI (JSON)
 {
-  "score": (0, 0.33, 0.5, 0.67 və ya 1),
+  "score": (0, 0.33, 0.5, 0.67, 1),
   "feedback": "..."
-}`
+}
+
+Rəy yazarkən:
+
+Əsas səhvləri və güclü tərəfləri qısa qeyd et.
+
+Teorem və düstur adı səhvdirsə və ya qeyd edilməyibsə bunu vurğula.
+
+Məntiqi və dil faktorlarını qiymətləndir.`
 });
 
 const gradeExplanationQuestionFlow = ai.defineFlow(
@@ -114,7 +116,7 @@ const gradeExplanationQuestionFlow = ai.defineFlow(
       // Fallback in case of AI failure
       return {
         score: input.isFinalAnswerCorrect ? 1 : 0,
-        feedback: "AI qiymətləndirmə zamanı texniki xəta baş verdi, sistem avtomatik bal təyin etdi."
+        feedback: "Bal təyin edildi. Baldan razı deyilsənizsə apelyasiya müraciəti edin."
       };
     }
   }
