@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,25 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+const MATH_SYMBOLS = ['√', '∛', '²', '³', 'π', 'Σ', '∫', '≠', '≤', '≥', '÷', '×', '∞', '°', '±'];
+
+function MathToolbar({ onInsert }: { onInsert: (sym: string) => void }) {
+  return (
+    <div className="flex gap-1.5 p-2 bg-muted/10 backdrop-blur-md rounded-xl border border-white/5 mb-3 overflow-x-auto no-scrollbar scroll-smooth">
+      {MATH_SYMBOLS.map((sym) => (
+        <button
+          key={sym}
+          type="button"
+          onClick={() => onInsert(sym)}
+          className="h-9 w-9 min-w-[36px] flex items-center justify-center rounded-lg border border-white/10 bg-card/40 text-foreground font-black text-sm hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm active:scale-90"
+        >
+          {sym}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function ExamSession() {
   const { code } = useParams();
   const searchParams = useSearchParams();
@@ -41,6 +60,7 @@ export default function ExamSession() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
+  const warningToastShown = useRef(false);
 
   const attemptRef = useMemoFirebase(() => 
     attemptId ? doc(firestore, 'studentAttempts', attemptId) : null, 
@@ -63,7 +83,11 @@ export default function ExamSession() {
         endTime: Date.now(),
         isCompleted: true 
       });
-      toast({ title: 'İmtahan bitdi', description: 'Nəticələriniz hesablanır...' });
+      toast({ 
+        title: 'İmtahan Bitdi', 
+        description: 'Vaxtınız başa çatdı və ya imtahanı sonlandırdınız. Nəticələrə yönləndirilirsiniz...',
+        variant: 'default'
+      });
       router.push(`/results/${code}`);
     } catch (e) {
       setIsSubmitting(false);
@@ -98,9 +122,23 @@ export default function ExamSession() {
 
   // Timer Countdown Logic
   useEffect(() => {
-    if (timeLeft === null || timeLeft <= 0 || !hasCheckedStatus) {
-      if (timeLeft === 0) handleFinish();
+    if (timeLeft === null || timeLeft < 0 || !hasCheckedStatus) {
       return;
+    }
+
+    if (timeLeft === 0) {
+      handleFinish();
+      return;
+    }
+
+    // Warning at 30 seconds
+    if (timeLeft === 30 && !warningToastShown.current) {
+      warningToastShown.current = true;
+      toast({
+        title: "DİQQƏT: Son 30 Saniyə!",
+        description: "İmtahanın bitməsinə 30 saniyə qaldı. Vaxt bitdikdə cavablarınız avtomatik yadda saxlanılacaq.",
+        variant: "destructive",
+      });
     }
 
     const timerId = setInterval(() => {
@@ -115,7 +153,7 @@ export default function ExamSession() {
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [timeLeft === null, hasCheckedStatus, handleFinish]);
+  }, [timeLeft, hasCheckedStatus, handleFinish, toast]);
 
   const updateAnswer = async (qId: string, finalAnswer: string, explanation?: string) => {
     if (!attempt || !attemptRef) return;
@@ -209,9 +247,11 @@ export default function ExamSession() {
         <div className="flex items-center gap-4">
           <div className={cn(
             "flex items-center gap-2 px-6 py-2 rounded-xl font-mono text-xl font-black transition-all duration-500 shadow-inner min-w-[120px] justify-center border",
-            timeLeft < 300 ? 'bg-red-500/10 text-red-500 animate-pulse border-red-500/30' : 'bg-background/50 text-foreground border-white/10'
+            timeLeft < 30 ? 'bg-red-600 text-white animate-bounce border-none shadow-red-500/50 shadow-lg' :
+            timeLeft < 300 ? 'bg-red-500/10 text-red-500 animate-pulse border-red-500/30' : 
+            'bg-background/50 text-foreground border-white/10'
           )}>
-            <Timer className={cn("w-5 h-5", timeLeft < 300 ? "text-red-500" : "text-primary")} />
+            <Timer className={cn("w-5 h-5", timeLeft < 30 ? "text-white" : timeLeft < 300 ? "text-red-500" : "text-primary")} />
             {formatTime(timeLeft)}
           </div>
 
@@ -309,7 +349,14 @@ export default function ExamSession() {
               )}
 
               {currentQ.type === 'open' && (
-                <div className="max-w-xl mx-auto space-y-6">
+                <div className="max-w-xl mx-auto space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black text-foreground uppercase tracking-widest px-1">Riyazi Simvollar</Label>
+                    <MathToolbar onInsert={(sym) => {
+                      const currentVal = attempt.answers?.[currentQ.id]?.finalAnswer || '';
+                      updateAnswer(currentQ.id, currentVal + sym);
+                    }} />
+                  </div>
                   <div className="p-8 bg-muted/5 backdrop-blur-xl rounded-3xl border-2 border-dashed border-white/10 space-y-4 shadow-xl flex flex-col items-center">
                     <Label className="text-sm font-black text-foreground uppercase tracking-widest text-center opacity-60">Cavabınızı Daxil Edin</Label>
                     <Input 
@@ -329,6 +376,14 @@ export default function ExamSession() {
                       <div className="bg-primary text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm shadow-lg">1</div>
                       Ətraflı İzah
                     </Label>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-foreground uppercase tracking-widest opacity-40">Simvollar</Label>
+                      <MathToolbar onInsert={(sym) => {
+                        const currentExpl = attempt.answers?.[currentQ.id]?.explanation || '';
+                        const currentFinal = attempt.answers?.[currentQ.id]?.finalAnswer || '';
+                        updateAnswer(currentQ.id, currentFinal, currentExpl + sym);
+                      }} />
+                    </div>
                     <Textarea 
                       className="min-h-[300px] text-lg leading-relaxed rounded-2xl border-2 border-white/5 p-6 shadow-xl bg-background/30 focus:bg-background focus:ring-4 focus:ring-primary/20 transition-all text-foreground resize-none"
                       placeholder="Həll yolunu və məntiqini ətraflı yazın..."
@@ -341,6 +396,14 @@ export default function ExamSession() {
                       <div className="bg-primary text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm shadow-lg">2</div>
                       Yekun Nəticə
                     </Label>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-primary uppercase tracking-widest opacity-40">Simvollar</Label>
+                      <MathToolbar onInsert={(sym) => {
+                        const currentExpl = attempt.answers?.[currentQ.id]?.explanation || '';
+                        const currentFinal = attempt.answers?.[currentQ.id]?.finalAnswer || '';
+                        updateAnswer(currentQ.id, currentFinal + sym, currentExpl);
+                      }} />
+                    </div>
                     <div className="p-8 bg-primary/5 rounded-3xl border-2 border-primary/10 shadow-xl flex flex-col items-center justify-center space-y-6 flex-1">
                       <Input 
                         placeholder="Yekun cavab..."
@@ -372,7 +435,7 @@ export default function ExamSession() {
             Əvvəlki
           </Button>
 
-          <div className="flex flex-wrap justify-center gap-2 bg-background/20 backdrop-blur-3xl p-3 rounded-2xl border border-white/10 shadow-lg">
+          <div className="flex flex-wrap justify-center gap-2 bg-background/20 backdrop-blur-3xl p-3 rounded-2xl border border-white/10 shadow-lg overflow-x-auto no-scrollbar max-w-[50%] md:max-w-none">
             {questions.map((_: any, i: number) => {
               const isAnswered = !!attempt.answers?.[questions[i].id]?.finalAnswer;
               const isCurrent = i === currentIdx;
@@ -381,7 +444,7 @@ export default function ExamSession() {
                   key={i}
                   onClick={() => setCurrentIdx(i)}
                   className={cn(
-                    "w-10 h-10 rounded-xl text-sm font-black transition-all duration-300 transform hover:scale-110 active:scale-95",
+                    "w-10 h-10 rounded-xl text-sm font-black transition-all duration-300 transform hover:scale-110 active:scale-95 min-w-[40px]",
                     isCurrent 
                       ? "bg-primary text-white scale-110 shadow-lg z-10" 
                       : isAnswered 
