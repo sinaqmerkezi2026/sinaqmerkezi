@@ -131,11 +131,11 @@ export default function ExamEditor() {
   };
 
   const generateCodes = () => {
-    const codes = Array.from({ length: 100 }, () => 
+    const codes = Array.from({ length: 20 }, () => 
       Math.random().toString(36).substr(2, 6).toUpperCase()
     );
     setExamState(prev => ({ ...prev, codes: [...(prev.codes || []), ...codes] }));
-    toast({ title: 'Uğurlu', description: '100 ədəd yeni unikal kod siyahıya əlavə edildi.' });
+    toast({ title: 'Uğurlu', description: '20 ədəd yeni unikal kod siyahıya əlavə edildi.' });
   };
 
   const handleSave = () => {
@@ -176,7 +176,7 @@ export default function ExamEditor() {
           <ThemeToggle />
           <Button variant="outline" onClick={generateCodes} className="hidden sm:flex rounded-xl font-bold bg-background border-border/50">
             <Key className="w-4 h-4 mr-2" />
-            Yeni Kodlar (+100)
+            Yeni Kodlar (+20)
           </Button>
           <Button onClick={handleSave} className="rounded-xl font-black shadow-lg text-white">
             <Save className="w-4 h-4 mr-2" />
