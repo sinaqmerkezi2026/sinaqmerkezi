@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -18,6 +17,25 @@ import { useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase
 import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { ThemeToggle } from '@/components/ThemeToggle';
+
+const MATH_SYMBOLS = ['π', '∞', 'Σ', 'Δ', '√', '∛', '∜', '²', '³', '⁴', 'ⁿ', '≠', '≈', '≤', '≥', '±', '×', '÷', '∩', '∪', '∈', 'α', 'β', 'γ', 'θ', 'λ', 'σ', 'ω'];
+
+function MathToolbar({ onInsert }: { onInsert: (sym: string) => void }) {
+  return (
+    <div className="flex gap-1 p-1 bg-muted/20 rounded-lg border border-border/50 mb-2 overflow-x-auto no-scrollbar shadow-inner">
+      {MATH_SYMBOLS.map((sym) => (
+        <button
+          key={sym}
+          type="button"
+          onClick={() => onInsert(sym)}
+          className="h-8 w-8 min-w-[32px] flex items-center justify-center rounded bg-background border border-border/50 text-foreground font-black text-xs hover:bg-primary hover:text-white transition-all active:scale-90"
+        >
+          {sym}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 type QuestionType = 'mcq' | 'open' | 'explanation';
 
@@ -112,11 +130,11 @@ export default function ExamEditor() {
   };
 
   const generateCodes = () => {
-    const codes = Array.from({ length: 20 }, () => 
+    const codes = Array.from({ length: 100 }, () => 
       Math.random().toString(36).substr(2, 6).toUpperCase()
     );
     setExamState(prev => ({ ...prev, codes: [...(prev.codes || []), ...codes] }));
-    toast({ title: 'Uğurlu', description: '20 ədəd yeni unikal kod siyahıya əlavə edildi.' });
+    toast({ title: 'Uğurlu', description: '100 ədəd yeni unikal kod siyahıya əlavə edildi.' });
   };
 
   const handleSave = () => {
@@ -157,7 +175,7 @@ export default function ExamEditor() {
           <ThemeToggle />
           <Button variant="outline" onClick={generateCodes} className="hidden sm:flex rounded-xl font-bold bg-background border-border/50">
             <Key className="w-4 h-4 mr-2" />
-            Yeni Kodlar (+20)
+            Yeni Kodlar (+100)
           </Button>
           <Button onClick={handleSave} className="rounded-xl font-black shadow-lg text-white">
             <Save className="w-4 h-4 mr-2" />
@@ -232,7 +250,8 @@ export default function ExamEditor() {
                   <CardContent className="pt-8 p-8 space-y-6">
                     <div className="flex justify-between items-start gap-6">
                       <div className="flex-1 space-y-6">
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 items-center">
+                          <Badge className="bg-primary text-white font-black px-4 py-2 rounded-lg shadow-md">Sual {idx + 1}</Badge>
                           <Select value={q.type} onValueChange={(val: QuestionType) => updateQuestion(q.id, { type: val })}>
                             <SelectTrigger className="w-[220px] h-11 rounded-xl bg-muted/30 border-border/50 font-bold">
                               <SelectValue placeholder="Sual növü" />
@@ -251,12 +270,18 @@ export default function ExamEditor() {
                           </Button>
                         </div>
 
-                        <Textarea 
-                          placeholder={`Sual ${idx + 1} mətnini daxil edin...`} 
-                          value={q.text} 
-                          onChange={e => updateQuestion(q.id, { text: e.target.value })}
-                          className="min-h-[120px] rounded-2xl bg-muted/20 border-border/50 text-lg font-bold leading-relaxed"
-                        />
+                        <div className="space-y-2">
+                          <MathToolbar onInsert={(sym) => {
+                            const currentText = q.text || '';
+                            updateQuestion(q.id, { text: currentText + sym });
+                          }} />
+                          <Textarea 
+                            placeholder={`Sual ${idx + 1} mətnini daxil edin...`} 
+                            value={q.text} 
+                            onChange={e => updateQuestion(q.id, { text: e.target.value })}
+                            className="min-h-[120px] rounded-2xl bg-muted/20 border-border/50 text-lg font-bold leading-relaxed"
+                          />
+                        </div>
 
                         {q.image && (
                           <div className="relative w-full max-w-sm aspect-video border-4 border-muted/50 rounded-[1.5rem] overflow-hidden bg-muted/10 group/img">
@@ -302,6 +327,10 @@ export default function ExamEditor() {
                         {q.type === 'open' && (
                           <div className="space-y-2">
                             <Label className="text-xs font-black text-primary uppercase tracking-widest px-1">Düzgün Cavab</Label>
+                            <MathToolbar onInsert={(sym) => {
+                              const currentAns = q.correctAnswer || '';
+                              updateQuestion(q.id, { correctAnswer: currentAns + sym });
+                            }} />
                             <Input 
                               placeholder="Doğru cavabı bura daxil edin..." 
                               value={q.correctAnswer} 
