@@ -29,7 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const MATH_SYMBOLS = ['√', '∛', '²', '³', 'π', 'Σ', '∫', '≠', '≤', '≥', '÷', '×', '∞', '°', '±'];
+const MATH_SYMBOLS = ['π', '∞', 'Σ', 'Δ', '√', '∛', '∜', '²', '³', '⁴', 'ⁿ', '≠', '≈', '≤', '≥', '±', '×', '÷', '∩', '∪', '∈', 'α', 'β', 'γ', 'θ', 'λ', 'σ', 'ω'];
 
 function MathToolbar({ onInsert }: { onInsert: (sym: string) => void }) {
   return (
@@ -95,7 +95,6 @@ export default function ExamSession() {
     }
   }, [attempt, attemptRef, code, isSubmitting, router, toast]);
 
-  // Initial redirect check
   useEffect(() => {
     if (attemptId && !isAttemptLoading) {
       if (!attempt) {
@@ -109,7 +108,6 @@ export default function ExamSession() {
     }
   }, [attempt, isAttemptLoading, attemptId, router, code]);
 
-  // Initialize Timer
   useEffect(() => {
     if (exam && attempt && !attempt.endTime && timeLeft === null) {
       const startTime = attempt.startTime;
@@ -120,7 +118,6 @@ export default function ExamSession() {
     }
   }, [exam, attempt, timeLeft]);
 
-  // Timer Countdown Logic
   useEffect(() => {
     if (timeLeft === null || timeLeft < 0 || !hasCheckedStatus) {
       return;
@@ -131,7 +128,6 @@ export default function ExamSession() {
       return;
     }
 
-    // Warning at 30 seconds
     if (timeLeft === 30 && !warningToastShown.current) {
       warningToastShown.current = true;
       toast({
@@ -229,7 +225,6 @@ export default function ExamSession() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-body relative overflow-hidden">
-      {/* Background Orbs */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -257,7 +252,6 @@ export default function ExamSession() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" className="font-black px-6 h-10 rounded-xl shadow-lg hover:scale-105 transition-all text-white text-sm">
