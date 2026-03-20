@@ -19,7 +19,7 @@ import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-const MATH_SYMBOLS = ['π', '∞', 'Σ', 'Δ', '√', '∛', '∜', '²', '³', '⁴', 'ⁿ', '≠', '≈', '≤', '≥', '±', '×', '÷', '∩', '∪', '∈', 'α', 'β', 'γ', 'θ', 'λ', 'σ', 'ω'];
+const MATH_SYMBOLS = ['π', '∞', 'Σ', 'Δ', '∠' , '⊥' , '∼' , '≅' , '₀' , '₁' , '₂' , '₃' , '₄' , '₅' , '₆' , '₇' , '₈' , '₉' , 'ₙ' , '°' , '√', '∛', '∜', '²', '³', '⁴', 'ⁿ', '≠', '≈', '≤', '≥', '±', '×', '÷', '∩', '∪', '∈', 'α', 'β', 'γ', 'θ', 'λ', 'σ', 'ω'];
 
 function MathToolbar({ onInsert }: { onInsert: (sym: string) => void }) {
   return (
