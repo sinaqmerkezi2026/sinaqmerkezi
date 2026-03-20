@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -7,28 +8,59 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
+import { Lock, ShieldCheck, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useFirestore } from '@/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'Nicat_2010') {
-      localStorage.setItem('admin_auth', 'true');
-      toast({ title: 'Xoş gəldiniz', description: 'İdarəetmə panelinə yönləndirilirsiniz...' });
-      router.push('/nicat/admin/dashboard');
-    } else {
-      toast({ title: 'Giriş rədd edildi', description: 'Şifrə yanlışdır. Yenidən cəhd edin.', variant: 'destructive' });
+    if (!password) return;
+
+    setIsLoading(true);
+    try {
+      const configRef = doc(firestore, 'adminSettings', 'config');
+      const configSnap = await getDoc(configRef);
+      
+      let dbPassword = '';
+      
+      if (!configSnap.exists()) {
+        // İlk quraşdırma: Əgər bazada heç nə yoxdursa, Nicat_2010 ilə girişə icazə ver və onu bazaya yaz
+        if (password === 'Nicat_2010') {
+          await setDoc(configRef, { password: 'Nicat_2010' });
+          dbPassword = 'Nicat_2010';
+        } else {
+          toast({ title: 'Sistem quraşdırılmayıb', description: 'İlkin giriş üçün təhlükəsizlik kodu tələb olunur.', variant: 'destructive' });
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        dbPassword = configSnap.data().password;
+      }
+
+      if (password === dbPassword) {
+        localStorage.setItem('admin_auth', 'true');
+        toast({ title: 'Xoş gəldiniz', description: 'İdarəetmə panelinə yönləndirilirsiniz...' });
+        router.push('/nicat/admin/dashboard');
+      } else {
+        toast({ title: 'Giriş rədd edildi', description: 'Şifrə yanlışdır. Yenidən cəhd edin.', variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Xəta', description: 'Verilənlər bazası ilə əlaqə qurulmadı.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Orbs */}
       <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
       <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-primary/5 rounded-full blur-[150px] animate-pulse" />
 
@@ -63,16 +95,22 @@ export default function AdminLogin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoFocus
+                  disabled={isLoading}
                 />
               </div>
             </div>
             
             <Button 
               type="submit" 
+              disabled={isLoading}
               className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black text-xl rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 group"
             >
-              Paneli Aç
-              <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
+                <>
+                  Paneli Aç
+                  <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </Button>
           </form>
         </CardContent>
