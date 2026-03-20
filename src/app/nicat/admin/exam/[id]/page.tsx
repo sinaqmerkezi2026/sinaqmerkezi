@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -22,13 +23,13 @@ const MATH_SYMBOLS = ['π', '∞', 'Σ', 'Δ', '√', '∛', '∜', '²', '³', 
 
 function MathToolbar({ onInsert }: { onInsert: (sym: string) => void }) {
   return (
-    <div className="flex gap-1 p-1 bg-muted/20 rounded-lg border border-border/50 mb-2 overflow-x-auto no-scrollbar shadow-inner">
+    <div className="flex flex-wrap gap-1.5 p-2 bg-muted/20 rounded-xl border border-border/50 mb-3 shadow-inner">
       {MATH_SYMBOLS.map((sym) => (
         <button
           key={sym}
           type="button"
           onClick={() => onInsert(sym)}
-          className="h-8 w-8 min-w-[32px] flex items-center justify-center rounded bg-background border border-border/50 text-foreground font-black text-xs hover:bg-primary hover:text-white transition-all active:scale-90"
+          className="h-9 w-9 min-w-[36px] flex items-center justify-center rounded-lg bg-background border border-border/50 text-foreground font-black text-sm hover:bg-primary hover:text-white transition-all active:scale-90 shadow-sm"
         >
           {sym}
         </button>
@@ -250,10 +251,12 @@ export default function ExamEditor() {
                   <CardContent className="pt-8 p-8 space-y-6">
                     <div className="flex justify-between items-start gap-6">
                       <div className="flex-1 space-y-6">
-                        <div className="flex gap-4 items-center">
-                          <Badge className="bg-primary text-white font-black px-4 py-2 rounded-lg shadow-md">Sual {idx + 1}</Badge>
+                        <div className="flex flex-wrap gap-4 items-center">
+                          <Badge className="bg-primary text-white font-black px-6 py-2.5 rounded-xl shadow-lg text-sm border-b-4 border-primary-foreground/20">
+                            Sual {idx + 1}
+                          </Badge>
                           <Select value={q.type} onValueChange={(val: QuestionType) => updateQuestion(q.id, { type: val })}>
-                            <SelectTrigger className="w-[220px] h-11 rounded-xl bg-muted/30 border-border/50 font-bold">
+                            <SelectTrigger className="w-[200px] h-11 rounded-xl bg-muted/30 border-border/50 font-bold">
                               <SelectValue placeholder="Sual növü" />
                             </SelectTrigger>
                             <SelectContent>
@@ -270,17 +273,21 @@ export default function ExamEditor() {
                           </Button>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-4">
+                          <Label className="text-xs font-black text-muted-foreground uppercase tracking-widest px-1">Sual Mətni və Simvollar</Label>
                           <MathToolbar onInsert={(sym) => {
                             const currentText = q.text || '';
                             updateQuestion(q.id, { text: currentText + sym });
                           }} />
-                          <Textarea 
-                            placeholder={`Sual ${idx + 1} mətnini daxil edin...`} 
-                            value={q.text} 
-                            onChange={e => updateQuestion(q.id, { text: e.target.value })}
-                            className="min-h-[120px] rounded-2xl bg-muted/20 border-border/50 text-lg font-bold leading-relaxed"
-                          />
+                          <div className="relative group/textarea">
+                            <div className="absolute left-[-1.5rem] top-4 w-1 bg-primary/20 rounded-full h-12 group-focus-within/textarea:bg-primary transition-all" />
+                            <Textarea 
+                              placeholder={`Sual ${idx + 1} mətnini daxil edin...`} 
+                              value={q.text} 
+                              onChange={e => updateQuestion(q.id, { text: e.target.value })}
+                              className="min-h-[140px] rounded-2xl bg-muted/20 border-border/50 text-lg font-bold leading-relaxed focus:bg-muted/40 transition-all"
+                            />
+                          </div>
                         </div>
 
                         {q.image && (
@@ -325,7 +332,7 @@ export default function ExamEditor() {
                         )}
 
                         {q.type === 'open' && (
-                          <div className="space-y-2">
+                          <div className="space-y-4 bg-primary/5 p-6 rounded-[2rem] border border-primary/10">
                             <Label className="text-xs font-black text-primary uppercase tracking-widest px-1">Düzgün Cavab</Label>
                             <MathToolbar onInsert={(sym) => {
                               const currentAns = q.correctAnswer || '';
@@ -335,20 +342,24 @@ export default function ExamEditor() {
                               placeholder="Doğru cavabı bura daxil edin..." 
                               value={q.correctAnswer} 
                               onChange={e => updateQuestion(q.id, { correctAnswer: e.target.value })}
-                              className="h-12 rounded-xl bg-primary/5 border-primary/20 text-lg font-black text-primary text-center"
+                              className="h-14 rounded-2xl bg-background border-primary/20 text-xl font-black text-primary text-center shadow-inner"
                             />
                           </div>
                         )}
 
                         {q.type === 'explanation' && (
-                          <div className="space-y-4">
-                            <div className="space-y-2">
+                          <div className="space-y-6">
+                            <div className="space-y-4 bg-primary/5 p-6 rounded-[2rem] border border-primary/10">
                               <Label className="text-xs font-black text-primary uppercase tracking-widest px-1">Yekun Doğru Cavab</Label>
+                              <MathToolbar onInsert={(sym) => {
+                                const currentAns = q.correctAnswer || '';
+                                updateQuestion(q.id, { correctAnswer: currentAns + sym });
+                              }} />
                               <Input 
                                 placeholder="Doğru son cavab..." 
                                 value={q.correctAnswer} 
                                 onChange={e => updateQuestion(q.id, { correctAnswer: e.target.value })}
-                                className="h-12 rounded-xl bg-primary/5 border-primary/20 text-lg font-black text-primary text-center"
+                                className="h-14 rounded-2xl bg-background border-primary/20 text-xl font-black text-primary text-center shadow-inner"
                               />
                             </div>
                             <div className="space-y-2">
@@ -357,13 +368,13 @@ export default function ExamEditor() {
                                 placeholder="AI bu mətni əsas götürərək tələbənin izahını ballandıracaq..." 
                                 value={q.explanationCriterion}
                                 onChange={e => updateQuestion(q.id, { explanationCriterion: e.target.value })}
-                                className="min-h-[100px] rounded-xl bg-muted/20 border-border/50"
+                                className="min-h-[120px] rounded-2xl bg-muted/20 border-border/50 italic"
                               />
                             </div>
                           </div>
                         )}
                       </div>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 rounded-xl mt-1" onClick={() => removeQuestion(q.id)}>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 rounded-xl mt-1 h-12 w-12" onClick={() => removeQuestion(q.id)}>
                         <Trash2 className="w-5 h-5" />
                       </Button>
                     </div>
