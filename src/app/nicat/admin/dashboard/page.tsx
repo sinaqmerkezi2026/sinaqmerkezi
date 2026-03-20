@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Sparkles, AlertCircle, Ticket, Search, Power, Trash2, Tag, Layers } from 'lucide-react';
+import { Plus, Calendar, Clock, DollarSign, Edit, LayoutDashboard, MessageSquare, Check, X, Info, HelpCircle, User, FileText, Sparkles, AlertCircle, Ticket, Search, Power, Trash2, Tag, Layers, ShieldCheck, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, getDoc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
@@ -56,6 +56,10 @@ export default function AdminDashboard() {
   // Category states
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+
+  // Security states
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Filter promos
   const filteredPromos = useMemo(() => {
@@ -194,6 +198,24 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUpdateAdminPassword = async () => {
+    if (!newAdminPassword.trim() || newAdminPassword.length < 6) {
+      toast({ title: 'Xəta', description: 'Şifrə ən az 6 simvol olmalıdır.', variant: 'destructive' });
+      return;
+    }
+    setIsUpdatingPassword(true);
+    try {
+      const configRef = doc(firestore, 'adminSettings', 'config');
+      await setDoc(configRef, { password: newAdminPassword.trim() }, { merge: true });
+      toast({ title: 'Uğurlu', description: 'Admin şifrəsi yeniləndi.' });
+      setNewAdminPassword("");
+    } catch (e) {
+      toast({ title: 'Xəta', description: 'Şifrəni yeniləmək mümkün olmadı.', variant: 'destructive' });
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
   if (!isAuthenticated) return null;
 
   return (
@@ -227,8 +249,10 @@ export default function AdminDashboard() {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="promos" className="rounded-lg px-8 font-bold data-[state=active]:bg-background gap-2">
-              Promo Kodlar
+            <TabsTrigger value="promos" className="rounded-lg px-8 font-bold data-[state=active]:bg-background">Promo Kodlar</TabsTrigger>
+            <TabsTrigger value="security" className="rounded-lg px-8 font-bold data-[state=active]:bg-background gap-2">
+              <ShieldCheck className="w-4 h-4" />
+              Təhlükəsizlik
             </TabsTrigger>
           </TabsList>
 
@@ -393,6 +417,41 @@ export default function AdminDashboard() {
               </ScrollArea>
             </Card>
           </TabsContent>
+
+          <TabsContent value="security">
+            <Card className="border-none bg-card/50 backdrop-blur-sm shadow-xl rounded-[2.5rem] overflow-hidden max-w-2xl mx-auto">
+              <CardHeader className="p-8 border-b border-border/50">
+                <CardTitle className="text-2xl font-black flex items-center gap-3">
+                  <Lock className="w-6 h-6 text-primary" /> Giriş Şifrəsini Yenilə
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest px-1">Yeni Admin Şifrəsi</Label>
+                  <div className="relative group">
+                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <Input 
+                      type="password" 
+                      placeholder="Ən azı 6 simvol..." 
+                      value={newAdminPassword}
+                      onChange={e => setNewAdminPassword(e.target.value)}
+                      className="pl-12 h-14 rounded-2xl bg-muted/20 border-border/50 font-bold"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic px-1">Təhlükəsizlik üçün mütəmadi olaraq şifrənizi yeniləyin.</p>
+                </div>
+              </CardContent>
+              <CardFooter className="p-8 bg-muted/10 border-t border-border/50">
+                <Button 
+                  onClick={handleUpdateAdminPassword} 
+                  disabled={isUpdatingPassword}
+                  className="w-full h-14 rounded-2xl font-black text-lg shadow-lg text-white"
+                >
+                  {isUpdatingPassword ? "Yenilənir..." : "Şifrəni Yadda Saxla"}
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -406,7 +465,7 @@ export default function AdminDashboard() {
             <Input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} className="rounded-xl h-12 font-bold" placeholder="Məs: Blok İmtahanları" />
           </div>
           <DialogFooter>
-            <Button onClick={handleAddCategory} className="w-full rounded-xl h-12 font-black shadow-lg">Əlavə et</Button>
+            <Button onClick={handleAddCategory} className="w-full rounded-xl h-12 font-black shadow-lg text-white">Əlavə et</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -445,11 +504,11 @@ export default function AdminDashboard() {
                       <div className="space-y-4">
                         <Textarea placeholder="Rəyiniz..." value={adminComment} onChange={e => setAdminComment(e.target.value)} className="rounded-2xl" />
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                          <Button className="bg-green-600 font-black rounded-xl" onClick={() => handleAppealDecision('approved', 1)}>+1.00</Button>
-                          <Button className="bg-lime-500 font-black rounded-xl" onClick={() => handleAppealDecision('approved', 0.67)}>+0.67</Button>
-                          <Button className="bg-lime-400 font-black rounded-xl" onClick={() => handleAppealDecision('approved', 0.5)}>+0.50</Button>
-                          <Button className="bg-lime-300 font-black rounded-xl" onClick={() => handleAppealDecision('approved', 0.33)}>+0.33</Button>
-                          <Button variant="destructive" className="font-black rounded-xl" onClick={() => handleAppealDecision('rejected')}>Rədd et</Button>
+                          <Button className="bg-green-600 font-black rounded-xl text-white" onClick={() => handleAppealDecision('approved', 1)}>+1.00</Button>
+                          <Button className="bg-lime-500 font-black rounded-xl text-white" onClick={() => handleAppealDecision('approved', 0.67)}>+0.67</Button>
+                          <Button className="bg-lime-400 font-black rounded-xl text-white" onClick={() => handleAppealDecision('approved', 0.5)}>+0.50</Button>
+                          <Button className="bg-lime-300 font-black rounded-xl text-white" onClick={() => handleAppealDecision('approved', 0.33)}>+0.33</Button>
+                          <Button variant="destructive" className="font-black rounded-xl text-white" onClick={() => handleAppealDecision('rejected')}>Rədd et</Button>
                         </div>
                       </div>
                     ) : (
