@@ -21,7 +21,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 export default function StudentEntry() {
@@ -187,7 +186,7 @@ export default function StudentEntry() {
             Gələcəyini <span className="text-primary">İndi Qur</span>
           </h1>
           
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-4xl mx-auto space-y-8">
             <div className="relative group">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input 
@@ -198,36 +197,33 @@ export default function StudentEntry() {
               />
             </div>
 
-            <ScrollArea className="w-full whitespace-nowrap pb-4">
-              <div className="flex w-max space-x-3 px-1">
+            <div className="flex flex-wrap justify-center gap-3 px-1">
+              <Button 
+                onClick={() => setSelectedCategoryId("all")}
+                variant={selectedCategoryId === "all" ? "default" : "secondary"}
+                className={cn(
+                  "rounded-full h-11 px-8 font-black text-sm transition-all shadow-md",
+                  selectedCategoryId === "all" ? "shadow-primary/30" : "bg-card/40 backdrop-blur-md"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4 mr-2" />
+                Hamısı
+              </Button>
+              {categories?.map((cat) => (
                 <Button 
-                  onClick={() => setSelectedCategoryId("all")}
-                  variant={selectedCategoryId === "all" ? "default" : "secondary"}
+                  key={cat.id}
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  variant={selectedCategoryId === cat.id ? "default" : "secondary"}
                   className={cn(
-                    "rounded-full h-12 px-8 font-black text-sm transition-all shadow-md",
-                    selectedCategoryId === "all" ? "shadow-primary/30" : "bg-card/40 backdrop-blur-md"
+                    "rounded-full h-11 px-8 font-black text-sm transition-all shadow-md",
+                    selectedCategoryId === cat.id ? "shadow-primary/30" : "bg-card/40 backdrop-blur-md"
                   )}
                 >
-                  <LayoutGrid className="w-4 h-4 mr-2" />
-                  Hamısı
+                  <Target className="w-4 h-4 mr-2" />
+                  {cat.name}
                 </Button>
-                {categories?.map((cat) => (
-                  <Button 
-                    key={cat.id}
-                    onClick={() => setSelectedCategoryId(cat.id)}
-                    variant={selectedCategoryId === cat.id ? "default" : "secondary"}
-                    className={cn(
-                      "rounded-full h-12 px-8 font-black text-sm transition-all shadow-md",
-                      selectedCategoryId === cat.id ? "shadow-primary/30" : "bg-card/40 backdrop-blur-md"
-                    )}
-                  >
-                    <Target className="w-4 h-4 mr-2" />
-                    {cat.name}
-                  </Button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="hidden" />
-            </ScrollArea>
+              ))}
+            </div>
           </div>
         </div>
 
