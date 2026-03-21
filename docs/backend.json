@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Exam": {
@@ -13,7 +12,10 @@
         "activeEndDate": { "type": "string", "format": "date-time" },
         "durationMinutes": { "type": "number" },
         "price": { "type": "number" },
-        "categoryId": { "type": "string" }
+        "categoryIds": { 
+          "type": "array",
+          "items": { "type": "string" }
+        }
       },
       "required": ["id", "name", "activeStartDate", "activeEndDate", "durationMinutes", "price"]
     },
