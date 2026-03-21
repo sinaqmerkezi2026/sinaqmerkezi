@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -8,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Timer, ChevronRight, ChevronLeft, Loader2, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
+import { Timer, ChevronRight, ChevronLeft, Loader2, AlertCircle, Sparkles, GraduationCap, ClipboardCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
@@ -33,7 +34,7 @@ const MATH_SYMBOLS = ['π', '∞', 'Σ', 'Δ', '√', '∛', '∜', '²', '³', 
 
 function MathToolbar({ onInsert }: { onInsert: (sym: string) => void }) {
   return (
-    <div className="flex gap-1.5 p-2 bg-muted/10 backdrop-blur-md rounded-xl border border-white/5 mb-3 overflow-x-auto no-scrollbar scroll-smooth">
+    <div className="flex flex-wrap gap-1.5 p-2 bg-muted/10 backdrop-blur-md rounded-xl border border-white/5 mb-3 shadow-sm">
       {MATH_SYMBOLS.map((sym) => (
         <button
           key={sym}
@@ -230,8 +231,11 @@ export default function ExamSession() {
 
       <header className="bg-card/40 backdrop-blur-2xl border-b border-white/10 px-6 py-3 flex justify-between items-center sticky top-0 z-50 shadow-xl">
         <div className="flex items-center gap-4">
-          <div className="bg-primary/20 p-2 rounded-xl shadow-lg">
-            <GraduationCap className="w-5 h-5 text-primary" />
+          <div className="bg-primary p-2 rounded-xl shadow-lg relative">
+            <ClipboardCheck className="w-5 h-5 text-white" />
+            <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5">
+               <GraduationCap className="w-2.5 h-2.5 text-primary" />
+            </div>
           </div>
           <div>
             <h1 className="font-black text-lg text-foreground hidden md:block">{exam.name}</h1>
