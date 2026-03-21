@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy, Heart, Info, Search, LayoutGrid, Target, MessageCircle, ClipboardCheck } from 'lucide-react';
+import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy, Heart, Info, Search, LayoutGrid, Target, MessageCircle, ClipboardCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, orderBy } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 
+const EXAMS_PER_PAGE = 5;
+
 export default function StudentEntry() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -30,6 +32,7 @@ export default function StudentEntry() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -49,6 +52,17 @@ export default function StudentEntry() {
       return matchesSearch && matchesCategory;
     });
   }, [allExams, searchQuery, selectedCategoryId]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategoryId]);
+
+  const totalPages = Math.ceil(filteredExams.length / EXAMS_PER_PAGE);
+  const paginatedExams = useMemo(() => {
+    const start = (currentPage - 1) * EXAMS_PER_PAGE;
+    return filteredExams.slice(start, start + EXAMS_PER_PAGE);
+  }, [filteredExams, currentPage]);
 
   const handleEnter = async () => {
     const cleanCode = code.trim().toUpperCase();
@@ -127,7 +141,6 @@ export default function StudentEntry() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center p-6 relative overflow-hidden">
-      {/* Background Decorations */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -239,37 +252,80 @@ export default function StudentEntry() {
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
               </div>
             ) : filteredExams.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6">
-                {filteredExams.map((exam: any) => (
-                  <Card key={exam.id} className="border-none shadow-xl bg-card/40 backdrop-blur-2xl rounded-[2.5rem] overflow-hidden group hover:ring-4 ring-primary/20 transition-all duration-500">
-                    <CardContent className="p-8 space-y-6">
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-3xl font-black text-foreground group-hover:text-primary transition-colors leading-tight">{exam.name}</h3>
-                        <div className="bg-primary/10 px-4 py-2 rounded-2xl text-primary font-black text-xl">
-                          {exam.price.toFixed(2)} AZN
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 gap-6">
+                  {paginatedExams.map((exam: any) => (
+                    <Card key={exam.id} className="border-none shadow-xl bg-card/40 backdrop-blur-2xl rounded-[2.5rem] overflow-hidden group hover:ring-4 ring-primary/20 transition-all duration-500">
+                      <CardContent className="p-8 space-y-6">
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-3xl font-black text-foreground group-hover:text-primary transition-colors leading-tight">{exam.name}</h3>
+                          <div className="bg-primary/10 px-4 py-2 rounded-2xl text-primary font-black text-xl">
+                            {exam.price.toFixed(2)} AZN
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2 text-muted-foreground font-black text-sm">
-                          <Clock className="w-5 h-5 text-primary/60" />
-                          {exam.durationMinutes} dəq
+                        <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-2 text-muted-foreground font-black text-sm">
+                            <Clock className="w-5 h-5 text-primary/60" />
+                            {exam.durationMinutes} dəq
+                          </div>
+                          <Badge variant="secondary" className="bg-muted/50 text-muted-foreground font-black border-none uppercase tracking-widest text-[10px]">
+                            {categories?.find(c => c.id === exam.categoryId)?.name || "Ümumi"}
+                          </Badge>
                         </div>
-                        <Badge variant="secondary" className="bg-muted/50 text-muted-foreground font-black border-none uppercase tracking-widest text-[10px]">
-                          {categories?.find(c => c.id === exam.categoryId)?.name || "Ümumi"}
-                        </Badge>
-                      </div>
 
-                      <Button 
-                        className="w-full h-14 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 shadow-lg gap-3 text-white transition-all hover:scale-[1.02]"
-                        onClick={() => handleBuyByTelegram(exam)}
-                      >
-                        <Send className="w-5 h-5" />
-                        Giriş Kodu Al (Telegram)
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <Button 
+                          className="w-full h-14 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 shadow-lg gap-3 text-white transition-all hover:scale-[1.02]"
+                          onClick={() => handleBuyByTelegram(exam)}
+                        >
+                          <Send className="w-5 h-5" />
+                          Giriş Kodu Al (Telegram)
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 py-4">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-xl"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </Button>
+                    
+                    <div className="flex gap-2">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          className={cn(
+                            "w-10 h-10 rounded-xl font-black",
+                            currentPage === page ? "shadow-lg shadow-primary/20" : "bg-card/40 backdrop-blur-md"
+                          )}
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-xl"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="h-64 flex flex-col items-center justify-center bg-card/40 backdrop-blur-2xl rounded-[3rem] border border-dashed border-white/10 text-muted-foreground">
