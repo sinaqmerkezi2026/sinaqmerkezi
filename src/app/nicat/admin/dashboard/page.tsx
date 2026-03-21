@@ -264,14 +264,18 @@ export default function AdminDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {exams?.map((exam: any) => {
-                  const category = categories?.find(c => c.id === exam.categoryId);
+                  const examCategories = categories?.filter(c => exam.categoryIds?.includes(c.id));
                   return (
                     <Card key={exam.id} className="group hover:shadow-2xl transition-all border-none bg-card/50 backdrop-blur-sm rounded-[2.5rem] overflow-hidden hover:ring-2 ring-primary/20">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
                             <CardTitle className="text-xl font-black group-hover:text-primary transition-colors">{exam.name}</CardTitle>
-                            {category && <Badge variant="secondary" className="bg-primary/10 text-primary border-none">{category.name}</Badge>}
+                            <div className="flex flex-wrap gap-1">
+                              {examCategories?.map(c => (
+                                <Badge key={c.id} variant="secondary" className="bg-primary/10 text-primary border-none">{c.name}</Badge>
+                              ))}
+                            </div>
                           </div>
                           <Badge variant="outline" className="font-mono bg-primary/5 text-primary border-primary/20">AKTİV</Badge>
                         </div>
