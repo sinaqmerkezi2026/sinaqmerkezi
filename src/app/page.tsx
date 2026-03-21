@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -7,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy, Heart, Info, Search, LayoutGrid, Target, MessageCircle } from 'lucide-react';
+import { LogIn, GraduationCap, Ticket, Loader2, Sparkles, Clock, DollarSign, Send, Trophy, Heart, Info, Search, LayoutGrid, Target, MessageCircle, ClipboardCheck } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, orderBy } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
@@ -113,14 +114,14 @@ export default function StudentEntry() {
   };
 
   const handleBuyByTelegram = (exam: any) => {
-    const telegramUsername = "sinaqmerkezi"; 
+    const telegramUsername = "SinaqMerkeziAdmin"; 
     const message = encodeURIComponent(`Salam, mən "${exam.name}" imtahanı üçün giriş kodu almaq istəyirəm. Qiymət: ${exam.price} AZN.`);
     const url = `https://t.me/${telegramUsername}?text=${message}`;
     window.open(url, '_blank');
   };
 
   const handleSupport = () => {
-    const telegramUsername = "sinaqmerkezi";
+    const telegramUsername = "SinaqMerkeziAdmin";
     const url = `https://t.me/${telegramUsername}`;
     window.open(url, '_blank');
   };
@@ -133,8 +134,11 @@ export default function StudentEntry() {
 
       <header className="w-full max-w-6xl flex justify-between items-center z-50 py-4 px-6 bg-card/40 backdrop-blur-xl rounded-3xl border border-white/10 mt-2 shadow-2xl">
         <div className="flex items-center gap-3">
-          <div className="bg-primary p-2 rounded-2xl">
-            <GraduationCap className="w-6 h-6 text-white" />
+          <div className="bg-primary p-2 rounded-2xl relative">
+            <ClipboardCheck className="w-6 h-6 text-white" />
+            <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+               <GraduationCap className="w-3 h-3 text-primary" />
+            </div>
           </div>
           <span className="font-black text-2xl tracking-tight text-foreground">Sınaq<span className="text-primary">Mərkəzi</span></span>
         </div>
