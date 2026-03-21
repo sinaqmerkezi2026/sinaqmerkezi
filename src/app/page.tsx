@@ -48,7 +48,11 @@ export default function StudentEntry() {
     if (!allExams) return [];
     return allExams.filter(exam => {
       const matchesSearch = exam.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategoryId === "all" || exam.categoryId === selectedCategoryId;
+      
+      // Çoxlu kateqoriya dəstəyi üçün array-i yoxlayırıq
+      const examCats = exam.categoryIds || (exam.categoryId ? [exam.categoryId] : []);
+      const matchesCategory = selectedCategoryId === "all" || examCats.includes(selectedCategoryId);
+      
       return matchesSearch && matchesCategory;
     });
   }, [allExams, searchQuery, selectedCategoryId]);
@@ -269,9 +273,14 @@ export default function StudentEntry() {
                             <Clock className="w-5 h-5 text-primary/60" />
                             {exam.durationMinutes} dəq
                           </div>
-                          <Badge variant="secondary" className="bg-muted/50 text-muted-foreground font-black border-none uppercase tracking-widest text-[10px]">
-                            {categories?.find(c => c.id === exam.categoryId)?.name || "Ümumi"}
-                          </Badge>
+                          <div className="flex flex-wrap gap-2">
+                            {/* Çoxlu kateqoriya tag-ləri burada göstərilir */}
+                            {(exam.categoryIds || (exam.categoryId ? [exam.categoryId] : [])).map((catId: string) => (
+                              <Badge key={catId} variant="secondary" className="bg-muted/50 text-muted-foreground font-black border-none uppercase tracking-widest text-[10px]">
+                                {categories?.find(c => c.id === catId)?.name || "Ümumi"}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
 
                         <Button 
