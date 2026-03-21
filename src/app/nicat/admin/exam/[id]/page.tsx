@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -60,6 +61,7 @@ interface Exam {
   codes: string[];
   questions: Question[];
   categoryIds?: string[];
+  categoryId?: string; // Legacy support
 }
 
 export default function ExamEditor() {
@@ -104,7 +106,9 @@ export default function ExamEditor() {
     }
     
     if (existingExam) {
-      setExamState(existingExam);
+      // Kateqoriyaların array şəklində olmasını təmin edirik
+      const categoryIds = existingExam.categoryIds || (existingExam.categoryId ? [existingExam.categoryId] : []);
+      setExamState({ ...existingExam, categoryIds });
     }
   }, [existingExam, router]);
 
@@ -140,11 +144,11 @@ export default function ExamEditor() {
   };
 
   const generateCodes = () => {
-    const codes = Array.from({ length: 20 }, () => 
+    const codes = Array.from({ length: 100 }, () => 
       Math.random().toString(36).substr(2, 6).toUpperCase()
     );
     setExamState(prev => ({ ...prev, codes: [...(prev.codes || []), ...codes] }));
-    toast({ title: 'Uğurlu', description: '20 ədəd yeni unikal kod siyahıya əlavə edildi.' });
+    toast({ title: 'Uğurlu', description: '100 ədəd yeni unikal kod siyahıya əlavə edildi.' });
   };
 
   const handleSave = () => {
@@ -185,7 +189,7 @@ export default function ExamEditor() {
           <ThemeToggle />
           <Button variant="outline" onClick={generateCodes} className="hidden sm:flex rounded-xl font-bold bg-background border-border/50">
             <Key className="w-4 h-4 mr-2" />
-            Yeni Kodlar (+20)
+            Yeni Kodlar (+100)
           </Button>
           <Button onClick={handleSave} className="rounded-xl font-black shadow-lg text-white">
             <Save className="w-4 h-4 mr-2" />
