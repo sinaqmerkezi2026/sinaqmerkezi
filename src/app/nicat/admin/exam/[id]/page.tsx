@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -10,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Plus, Trash2, ArrowLeft, Key, ImageIcon, Copy, Check, Hash, Ticket, UserCheck, Layers } from 'lucide-react';
+import { Save, Plus, Trash2, ArrowLeft, Key, ImageIcon, Hash, Ticket, UserCheck, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,8 +17,9 @@ import { useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase
 import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { cn } from '@/lib/utils';
 
-const MATH_SYMBOLS = ['π', '∞', 'Σ', 'Δ', '∠' , '⊥' , '∼' , '≅' , '₀' , '₁' , '₂' , '₃' , '₄' , '₅' , '₆' , '₇' , '₈' , '₉' , 'ₙ' , '°' , '√', '∛', '∜', '²', '³', '⁴', 'ⁿ', '≠', '≈', '≤', '≥', '±', '×', '÷', '∩', '∪', '∈', 'α', 'β', 'γ', 'θ', 'λ', 'σ', 'ω'];
+const MATH_SYMBOLS = ['π', '∞', 'Σ', 'Δ', '√', '∛', '∜', '²', '³', '⁴', 'ⁿ', '≠', '≈', '≤', '≥', '±', '×', '÷', '∩', '∪', '∈', 'α', 'β', 'γ', 'θ', 'λ', 'σ', 'ω'];
 
 function MathToolbar({ onInsert }: { onInsert: (sym: string) => void }) {
   return (
@@ -59,7 +59,7 @@ interface Exam {
   price: number;
   codes: string[];
   questions: Question[];
-  categoryId?: string;
+  categoryIds?: string[];
 }
 
 export default function ExamEditor() {
@@ -78,7 +78,7 @@ export default function ExamEditor() {
     price: 1,
     codes: [],
     questions: [],
-    categoryId: ""
+    categoryIds: []
   });
 
   const examRef = useMemoFirebase(() => doc(firestore, 'exams', id as string), [firestore, id]);
@@ -108,6 +108,15 @@ export default function ExamEditor() {
     }
   }, [existingExam, router]);
 
+  const toggleCategory = (catId: string) => {
+    const currentIds = examState.categoryIds || [];
+    if (currentIds.includes(catId)) {
+      setExamState(p => ({ ...p, categoryIds: currentIds.filter(id => id !== catId) }));
+    } else {
+      setExamState(p => ({ ...p, categoryIds: [...currentIds, catId] }));
+    }
+  };
+
   const addQuestion = () => {
     const q: Question = {
       id: Math.random().toString(36).substr(2, 9),
@@ -131,11 +140,11 @@ export default function ExamEditor() {
   };
 
   const generateCodes = () => {
-    const codes = Array.from({ length: 20 }, () => 
+    const codes = Array.from({ length: 100 }, () => 
       Math.random().toString(36).substr(2, 6).toUpperCase()
     );
     setExamState(prev => ({ ...prev, codes: [...(prev.codes || []), ...codes] }));
-    toast({ title: 'Uğurlu', description: '20 ədəd yeni unikal kod siyahıya əlavə edildi.' });
+    toast({ title: 'Uğurlu', description: '100 ədəd yeni unikal kod siyahıya əlavə edildi.' });
   };
 
   const handleSave = () => {
@@ -176,7 +185,7 @@ export default function ExamEditor() {
           <ThemeToggle />
           <Button variant="outline" onClick={generateCodes} className="hidden sm:flex rounded-xl font-bold bg-background border-border/50">
             <Key className="w-4 h-4 mr-2" />
-            Yeni Kodlar (+20)
+            Yeni Kodlar (+100)
           </Button>
           <Button onClick={handleSave} className="rounded-xl font-black shadow-lg text-white">
             <Save className="w-4 h-4 mr-2" />
@@ -203,19 +212,25 @@ export default function ExamEditor() {
                   />
                 </div>
                 
-                <div className="sm:col-span-2 space-y-2">
-                  <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest px-1">Kateqoriya</Label>
-                  <Select value={examState.categoryId} onValueChange={(val) => setExamState(p => ({ ...p, categoryId: val }))}>
-                    <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-border/50 font-bold">
-                      <SelectValue placeholder="Kateqoriya seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Kateqoriya yoxdur</SelectItem>
-                      {categories?.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="sm:col-span-2 space-y-3">
+                  <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest px-1">Kateqoriyalar (Çoxlu seçim mümkündür)</Label>
+                  <div className="flex flex-wrap gap-2 p-4 bg-muted/20 rounded-2xl border border-border/50">
+                    {categories?.map(cat => (
+                      <Badge 
+                        key={cat.id} 
+                        onClick={() => toggleCategory(cat.id)}
+                        variant={examState.categoryIds?.includes(cat.id) ? "default" : "outline"}
+                        className={cn(
+                          "cursor-pointer px-4 py-2 text-sm font-bold transition-all rounded-xl",
+                          examState.categoryIds?.includes(cat.id) ? "shadow-md scale-105" : "bg-card/40 opacity-60 hover:opacity-100"
+                        )}
+                      >
+                        {examState.categoryIds?.includes(cat.id) && <Check className="w-3 h-3 mr-1" />}
+                        {cat.name}
+                      </Badge>
+                    ))}
+                    {(!categories || categories.length === 0) && <p className="text-xs text-muted-foreground italic">Kateqoriya tapılmadı.</p>}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
